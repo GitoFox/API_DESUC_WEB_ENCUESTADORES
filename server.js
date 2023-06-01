@@ -39,7 +39,7 @@ app.get('/encuestadores/:rut', (req, res) => {
           imagenPath = 'img/Saludando.png';
         }
 
-        imagenURL = 'http://3.83.2.236:3000/img/' + path.basename(imagenPath); // Obtén solo el nombre del archivo de la imagen
+        imagenURL = '44.204.6.137:3000/img/' + path.basename(imagenPath); // Obtén solo el nombre del archivo de la imagen
         encuestador.imagenURL = imagenURL;
 
         // Leer y procesar los proyectos del encuestador
