@@ -17,7 +17,6 @@ app.use((req, res, next) => {
   next();
 });
 
-
 // Ruta para buscar a un encuestador por su RUT
 app.get('/encuestadores/:rut', (req, res) => {
   const rut = req.params.rut.trim();
@@ -43,6 +42,7 @@ app.get('/encuestadores/:rut', (req, res) => {
 
         imagenURL = 'http://3.86.195.69:3000/img/' + path.basename(imagenPath); // Obtén solo el nombre del archivo de la imagen
         encuestador.imagenURL = imagenURL;
+        encuestador.sinImagen = sinImagen; // Agregar la variable sinImagen al encuestador
 
         // Leer y procesar los proyectos del encuestador
         const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
