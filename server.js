@@ -27,7 +27,7 @@ function encriptarImagen(imagenPath) {
   hash.update(nombreArchivo);
 
   const nuevoNombre = hash.digest('hex') + extension;
-  const nuevoPath = path.join('img', nuevoNombre);
+  const nuevoPath = path.join('img', nuevoNombre).replace(/\\/g, '/'); // Reemplazar todas las apariciones de \\ por /
 
   // Copiar el archivo en lugar de renombrarlo
   fs.copyFileSync(imagenPath, nuevoPath);
