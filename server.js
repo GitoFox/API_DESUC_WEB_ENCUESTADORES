@@ -26,6 +26,22 @@ function encriptarImagen(imagenPath) {
   return imagenEncriptada;
 }
 
+// Función para guardar los cambios en el archivo CSV
+function guardarCambiosEnCSV(datos, csvFilePath) {
+  const csvWriter = csv.writer({ sendHeaders: false });
+
+  const writeStream = fs.createWriteStream(csvFilePath);
+  writeStream.write('\ufeff'); // BOM (Byte Order Mark) para asegurar la codificación correcta
+
+  csvWriter.pipe(writeStream);
+
+  datos.forEach((row) => {
+    csvWriter.write(row);
+  });
+
+  csvWriter.end();
+}
+
 // Ejecutar la función de encriptación al iniciar el servidor
 app.get('/encuestadores/:rut', (req, res) => {
   const rut = req.params.rut.trim();
@@ -53,6 +69,11 @@ app.get('/encuestadores/:rut', (req, res) => {
           // Encriptar la imagen y actualizar el path en el CSV
           const imagenEncriptada = encriptarImagen(imagenPath);
           encuestador.img = imagenEncriptada;
+
+          // Actualizar el path en el CSV
+          const rowIndex = results.findIndex((row) => row.rut.trim() === rut);
+          results[rowIndex].img = imagenEncriptada;
+          guardarCambiosEnCSV(results, 'encuestadores.csv');
         }
 
         encuestador.imagenURL = imagenURL;
