@@ -19,6 +19,7 @@ app.use((req, res, next) => {
 });
 
 // Ruta para buscar a un encuestador por su RUT
+
 app.get('/encuestadores/:rut', (req, res) => {
   const rut = req.params.rut.trim();
 
@@ -51,6 +52,8 @@ app.get('/encuestadores/:rut', (req, res) => {
           fs.writeFileSync(hashedFilePath, imageBuffer);
 
           imagenPath = hashedFilePath;
+
+          encuestador.imagen = 'img/' + hashedFileName; // Actualizar la ruta en el objeto encuestador
         }
 
         imagenURL = 'http://54.174.45.227:3000/img/' + path.basename(imagenPath); // Obtén solo el nombre del archivo de la imagen
@@ -92,6 +95,7 @@ app.get('/encuestadores/:rut', (req, res) => {
       }
     });
 });
+
 
 // Ruta para servir las imágenes de los encuestadores
 app.use('/img', express.static(path.join(__dirname, 'img')));
