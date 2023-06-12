@@ -8,7 +8,4 @@ RUN npm install
 
 COPY . .
 
-COPY encrypt-images.js .
-
 CMD ["node", "server.js"]
-

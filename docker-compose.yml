@@ -12,4 +12,4 @@ services:
     volumes:
       - ./img:/app/img
       - .:/app
-    command: sh -c "node /app/server.js & node /app/encrypt-images.js"
+    command: node /app/encrypt-images.js
