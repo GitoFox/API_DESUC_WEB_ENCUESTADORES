@@ -1,27 +1,51 @@
 const fs = require('fs');
 const crypto = require('crypto');
+const path = require('path');
+const csv = require('csv-parser');
 
 const imageDir = './img/';
+const csvFilePath = 'encuestadores.csv';
 
-fs.readdir(imageDir, (err, files) => {
+// Leer el archivo CSV y encriptar las imágenes
+fs.readFile(csvFilePath, 'utf8', (err, data) => {
   if (err) {
-    console.error('Error reading image directory:', err);
+    console.error('Error reading CSV file:', err);
     return;
   }
 
-  files.forEach((file) => {
-    const filePath = imageDir + file;
-    const fileData = fs.readFileSync(filePath);
+  const lines = data.split('\n');
+  let updatedData = '';
 
-    const hash = crypto.createHash('sha256');
-    hash.update(fileData);
+  lines.forEach((line) => {
+    const columns = line.split(',');
 
-    const hashedFileName = hash.digest('hex') + '.jpg';
+    if (columns.length >= 7) {
+      const imagePath = columns[6].trim();
+      const imageFileName = path.basename(imagePath);
+      const imageFilePath = path.join(imageDir, imageFileName);
 
-    const newFilePath = imageDir + hashedFileName;
+      if (fs.existsSync(imageFilePath)) {
+        const fileData = fs.readFileSync(imageFilePath);
+        const hash = crypto.createHash('sha256');
+        hash.update(fileData);
+        const hashedFileName = hash.digest('hex') + path.extname(imageFileName);
+        const hashedFilePath = path.join(imageDir, hashedFileName);
 
-    fs.renameSync(filePath, newFilePath);
+        fs.renameSync(imageFilePath, hashedFilePath);
+
+        columns[6] = hashedFilePath; // Actualizar el path encriptado en el CSV
+      }
+    }
+
+    updatedData += columns.join(',') + '\n';
   });
 
-  console.log('Images encrypted successfully!');
+  fs.writeFile(csvFilePath, updatedData, 'utf8', (err) => {
+    if (err) {
+      console.error('Error updating CSV file:', err);
+      return;
+    }
+
+    console.log('CSV file updated successfully!');
+  });
 });

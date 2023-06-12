@@ -18,70 +18,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Ruta para encriptar las imágenes de la carpeta 'img'
-const imgFolderPath = path.join(__dirname, 'img');
-
-// Función para encriptar las imágenes y actualizar el archivo CSV
-function encriptarImagenes() {
-  fs.readdir(imgFolderPath, (err, files) => {
-    if (err) {
-      console.error('Error al leer la carpeta de imágenes:', err);
-      return;
-    }
-
-    files.forEach((file) => {
-      const imagePath = path.join(imgFolderPath, file);
-      const imageBuffer = fs.readFileSync(imagePath);
-      const hash = crypto.createHash('sha256');
-      hash.update(imageBuffer);
-      const hashedFileName = hash.digest('hex') + path.extname(file);
-      const hashedFilePath = path.join(imgFolderPath, hashedFileName);
-
-      fs.renameSync(imagePath, hashedFilePath);
-
-      // Actualizar el CSV con el nuevo path encriptado
-      const csvPath = 'encuestadores.csv';
-
-      fs.readFile(csvPath, 'utf8', (err, data) => {
-        if (err) {
-          console.error('Error al leer el archivo CSV:', err);
-          return;
-        }
-      
-        const lines = data.split('\n');
-        let updatedData = '';
-      
-        lines.forEach((line) => {
-          const columns = line.split(',');
-      
-          if (columns.length >= 7) {
-            const originalFileName = path.basename(columns[6].trim());
-            const hashedFileName = path.basename(hashedFilePath);
-            
-            if (originalFileName === hashedFileName) {
-              columns[6] = hashedFilePath; // Actualizar el path encriptado
-            }
-          }
-      
-          updatedData += columns.join(',') + '\n';
-        });
-      
-        fs.writeFile(csvPath, updatedData, 'utf8', (err) => {
-          if (err) {
-            console.error('Error al actualizar el archivo CSV:', err);
-            return;
-          }
-      
-          console.log(`Archivo CSV actualizado con el path encriptado: ${hashedFilePath}`);
-        });
-      });
-    });
-
-    console.log('Imágenes encriptadas correctamente');
-  });
-}
-
-// Ruta para buscar a un encuestador por su RUT
+// Ejecutar la función de encriptación al iniciar el servidor
 app.get('/encuestadores/:rut', (req, res) => {
   const rut = req.params.rut.trim();
 
@@ -111,6 +48,34 @@ app.get('/encuestadores/:rut', (req, res) => {
         encuestador.sinImagen = sinImagen; // Agregar la variable sinImagen al encuestador
         encuestador.imagenEncriptadaURL = imagenURL; // Nueva propiedad para la imagen encriptada
 
+
+        // Leer y procesar los proyectos del encuestador
+        const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
+        const currentDate = moment();
+
+        const proyectosActivos = [];
+        const proyectosExpirados = [];
+
+        proyectos.forEach((proyecto) => {
+          const fechaFin = moment(proyecto.proyecto_fecha_fin, 'M/D/YYYY');
+          const estaActivo = currentDate.isSameOrBefore(fechaFin, 'day');
+
+          const proyectoClasificado = {
+            nombre: proyecto.proyecto_nom,
+            fechaInicio: proyecto.proyecto_fecha_ini,
+            fechaFin: proyecto.proyecto_fecha_fin,
+          };
+
+          if (estaActivo) {
+            proyectosActivos.push(proyectoClasificado);
+          } else {
+            proyectosExpirados.push(proyectoClasificado);
+          }
+        });
+
+        encuestador.proyectosActivos = proyectosActivos;
+        encuestador.proyectosExpirados = proyectosExpirados;
+
         // Devolver solo los datos del encuestador y sus proyectos asociados
         res.json(encuestador);
       } else {
@@ -124,7 +89,5 @@ app.use('/img', express.static(path.join(__dirname, 'img')));
 
 // Iniciar el servidor
 app.listen(PORT, () => {
-  // Ejecutar la función de encriptación al iniciar el servidor
-  encriptarImagenes();
   console.log(`Servidor escuchando en el puerto ${PORT}`);
 });
