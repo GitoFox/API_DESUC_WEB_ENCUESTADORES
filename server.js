@@ -63,7 +63,7 @@ app.get('/encuestadores/:rut', (req, res) => {
           imagenPath = encriptarImagen(imagenPath);
         }
 
-        imagenURL = 'http://localhost:3000/' + imagenPath; // Usar el nuevo path encriptado
+        imagenURL = 'http://54.174.45.227:3000/' + imagenPath; // Usar el nuevo path encriptado
         encuestador.imagenURL = imagenURL;
         encuestador.sinImagen = sinImagen; // Agregar la variable sinImagen al encuestador
 
