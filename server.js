@@ -18,6 +18,25 @@ app.use((req, res, next) => {
   next();
 });
 
+// Función para encriptar una imagen y devolver el path encriptado
+function encriptarImagen(imagePath) {
+  if (!imagePath || imagePath === 'NA' || imagePath === '') {
+    // Asignar la ruta de la imagen fija cuando no hay imagen disponible
+    return 'img/Saludando.png';
+  }
+
+  const imageBuffer = fs.readFileSync(imagePath);
+  const hash = crypto.createHash('sha256');
+  hash.update(imageBuffer);
+
+  const hashedFileName = hash.digest('hex') + '.jpg';
+  const hashedFilePath = path.join(__dirname, 'img', hashedFileName);
+
+  fs.writeFileSync(hashedFilePath, imageBuffer);
+
+  return 'img/' + hashedFileName;
+}
+
 // Ruta para buscar a un encuestador por su RUT
 app.get('/encuestadores/:rut', (req, res) => {
   const rut = req.params.rut.trim();
@@ -32,22 +51,10 @@ app.get('/encuestadores/:rut', (req, res) => {
 
       if (encuestador) {
         let imagenPath = encuestador.imagen;
-        let imagenURL;
-        let sinImagen = false; // Variable para empleados sin imagen
 
-        if (!imagenPath || imagenPath === 'NA' || imagenPath === '') {
-          // Asignar la ruta de la imagen fija cuando no hay imagen disponible
-          imagenPath = 'img/Saludando.png';
-          sinImagen = true; // Establecer la variable sinImagen en true
-        } else {
-          const hashedFileName = path.basename(imagenPath); // Obtén el nombre del archivo encriptado
-          imagenURL = 'http://54.174.45.227:3000/img/' + hashedFileName;
-        }
+        const imagenEncriptadaURL = encriptarImagen(imagenPath);
 
-        encuestador.imagenURL = imagenURL;
-        encuestador.sinImagen = sinImagen; // Agregar la variable sinImagen al encuestador
-        encuestador.imagenEncriptadaURL = imagenURL; // Nueva propiedad para la imagen encriptada
-
+        encuestador.imagen = imagenEncriptadaURL;
 
         // Leer y procesar los proyectos del encuestador
         const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
