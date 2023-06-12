@@ -8,6 +8,9 @@ const moment = require('moment');
 const app = express();
 const PORT = 3000;
 
+// Variable para almacenar el path base de las imágenes
+let imageBasePath;
+
 // Middleware para parsear el cuerpo de las solicitudes como JSON
 app.use(express.json());
 app.use(cors());
@@ -40,7 +43,14 @@ app.get('/encuestadores/:rut', (req, res) => {
           sinImagen = true; // Establecer la variable sinImagen en true
         }
 
-        imagenURL = 'http://54.174.45.227:3000/img/' + path.basename(imagenPath); // Obtén solo el nombre del archivo de la imagen
+        if (imageBasePath) {
+          // Construir el path completo de la imagen usando el imageBasePath
+          imagenURL = `${imageBasePath}/${path.basename(imagenPath)}`;
+        } else {
+          // Utilizar el path original de la imagen
+          imagenURL = imagenPath;
+        }
+
         encuestador.imagenURL = imagenURL;
         encuestador.sinImagen = sinImagen; // Agregar la variable sinImagen al encuestador
 
@@ -82,7 +92,30 @@ app.get('/encuestadores/:rut', (req, res) => {
 // Ruta para servir las imágenes de los encuestadores
 app.use('/img', express.static(path.join(__dirname, 'img')));
 
-// Iniciar el servidor
+// Ruta para obtener el path base de las imágenes
+app.get('/imageBasePath', (req, res) => {
+  res.json({ imageBasePath });
+});
+
+// Función para establecer el path base de las imágenes
+function setImageBasePath() {
+  const dockerImagePath = '/app/img'; // Path dentro del contenedor Docker
+  const localImagePath = 'img'; // Path local fuera del contenedor
+
+  // Verificar si el path dentro del contenedor existe
+  fs.access(dockerImagePath, fs.constants.F_OK, (err) => {
+    if (err) {
+      // El path dentro del contenedor no existe, utilizar el path local
+      imageBasePath = localImagePath;
+    } else {
+      // El path dentro del contenedor existe, utilizarlo como path base
+      imageBasePath = dockerImagePath;
+    }
+  });
+}
+
+// Iniciar el servidor y establecer el path base de las imágenes
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en el puerto ${PORT}`);
+  setImageBasePath();
 });
