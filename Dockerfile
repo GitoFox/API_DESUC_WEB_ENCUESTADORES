@@ -8,6 +8,9 @@ WORKDIR /app
 COPY package.json package-lock.json /app/
 RUN npm install
 
+# Copia la carpeta img al contenedor
+COPY img /app/img
+
 COPY . /app
 
 # Expone el puerto 3000 en el contenedor
