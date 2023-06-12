@@ -37,6 +37,38 @@ app.get('/encriptar-imagenes', (req, res) => {
       const hashedFilePath = path.join(imgFolderPath, hashedFileName);
 
       fs.renameSync(imagePath, hashedFilePath);
+
+      // Actualizar el CSV con el nuevo path encriptado
+      const csvPath = 'encuestadores.csv';
+
+      fs.readFile(csvPath, 'utf8', (err, data) => {
+        if (err) {
+          console.error('Error al leer el archivo CSV:', err);
+          return res.status(500).json({ error: 'Error al leer el archivo CSV' });
+        }
+
+        const lines = data.split('\n');
+        let updatedData = '';
+
+        lines.forEach((line) => {
+          const columns = line.split(',');
+
+          if (columns.length >= 7 && columns[6].trim() === imagePath) {
+            columns[6] = hashedFilePath; // Actualizar el path encriptado
+          }
+
+          updatedData += columns.join(',') + '\n';
+        });
+
+        fs.writeFile(csvPath, updatedData, 'utf8', (err) => {
+          if (err) {
+            console.error('Error al actualizar el archivo CSV:', err);
+            return res.status(500).json({ error: 'Error al actualizar el archivo CSV' });
+          }
+
+          console.log(`Archivo CSV actualizado con el path encriptado: ${hashedFilePath}`);
+        });
+      });
     });
 
     return res.json({ message: 'Imágenes encriptadas correctamente' });
@@ -56,7 +88,7 @@ app.get('/encuestadores/:rut', (req, res) => {
       const encuestador = results.find((encuestador) => encuestador.rut.trim() === rut);
 
       if (encuestador) {
-        let imagenPath = encuestador.imagen;
+        let imagenPath = encuestador.img;
         let imagenURL;
         let sinImagen = false; // Variable para empleados sin imagen
 
@@ -72,6 +104,7 @@ app.get('/encuestadores/:rut', (req, res) => {
         encuestador.imagenURL = imagenURL;
         encuestador.sinImagen = sinImagen; // Agregar la variable sinImagen al encuestador
         encuestador.imagenEncriptadaURL = imagenURL; // Nueva propiedad para la imagen encriptada
+
 
         // Leer y procesar los proyectos del encuestador
         const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
