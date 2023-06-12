@@ -1,51 +1,32 @@
 const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path');
-const csv = require('csv-parser');
 
 const imageDir = './img/';
-const csvFilePath = 'encuestadores.csv';
 
-// Leer el archivo CSV y encriptar las imágenes
-fs.readFile(csvFilePath, 'utf8', (err, data) => {
+fs.readdir(imageDir, (err, files) => {
   if (err) {
-    console.error('Error reading CSV file:', err);
+    console.error('Error reading image directory:', err);
     return;
   }
 
-  const lines = data.split('\n');
-  let updatedData = '';
+  files.forEach((file) => {
+    const filePath = path.join(imageDir, file);
+    const stats = fs.statSync(filePath);
 
-  lines.forEach((line) => {
-    const columns = line.split(',');
+    if (stats.isFile()) {
+      const fileData = fs.readFileSync(filePath);
 
-    if (columns.length >= 7) {
-      const imagePath = columns[6].trim();
-      const imageFileName = path.basename(imagePath);
-      const imageFilePath = path.join(imageDir, imageFileName);
+      const hash = crypto.createHash('sha256');
+      hash.update(fileData);
 
-      if (fs.existsSync(imageFilePath)) {
-        const fileData = fs.readFileSync(imageFilePath);
-        const hash = crypto.createHash('sha256');
-        hash.update(fileData);
-        const hashedFileName = hash.digest('hex') + path.extname(imageFileName);
-        const hashedFilePath = path.join(imageDir, hashedFileName);
+      const hashedFileName = hash.digest('hex') + path.extname(file);
 
-        fs.renameSync(imageFilePath, hashedFilePath);
+      const newFilePath = path.join(imageDir, hashedFileName);
 
-        columns[6] = hashedFilePath; // Actualizar el path encriptado en el CSV
-      }
+      fs.renameSync(filePath, newFilePath);
     }
-
-    updatedData += columns.join(',') + '\n';
   });
 
-  fs.writeFile(csvFilePath, updatedData, 'utf8', (err) => {
-    if (err) {
-      console.error('Error updating CSV file:', err);
-      return;
-    }
-
-    console.log('CSV file updated successfully!');
-  });
+  console.log('Images encrypted successfully!');
 });
