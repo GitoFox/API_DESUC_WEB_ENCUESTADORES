@@ -4,7 +4,6 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const moment = require('moment');
-const crypto = require('crypto');
 
 const app = express();
 const PORT = 3000;
@@ -16,15 +15,6 @@ app.use(cors());
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
   next();
-});
-
-// Función para generar el hash de una imagen
-fs.readdirSync('img').forEach((file) => {
-  const imagePath = `img/${file}`;
-  const imageBuffer = fs.readFileSync(imagePath);
-  const hash = crypto.createHash('sha256').update(imageBuffer).digest('hex');
-  const encryptedImagePath = `img/${hash}.png`; // Ruta encriptada de la imagen
-  fs.renameSync(imagePath, encryptedImagePath);
 });
 
 // Ruta para buscar a un encuestador por su RUT
@@ -48,15 +38,9 @@ app.get('/encuestadores/:rut', (req, res) => {
           // Asignar la ruta de la imagen fija cuando no hay imagen disponible
           imagenPath = 'img/Saludando.png';
           sinImagen = true; // Establecer la variable sinImagen en true
-        } else {
-          // Obtener el hash de la imagen
-          const imageHash = generateImageHash(imagenPath);
-          const encryptedImagePath = `img/${imageHash}.png`; // Ruta encriptada de la imagen
-          fs.copyFileSync(imagenPath, encryptedImagePath);
-          imagenPath = encryptedImagePath;
         }
 
-        imagenURL = 'http://54.174.45.227:3000/' + imagenPath; // URL de la imagen
+        imagenURL = 'http://54.174.45.227:3000/img/' + path.basename(imagenPath); // Obtén solo el nombre del archivo de la imagen
         encuestador.imagenURL = imagenURL;
         encuestador.sinImagen = sinImagen; // Agregar la variable sinImagen al encuestador
 

@@ -8,8 +8,7 @@ RUN npm install
 
 COPY . .
 
-# Script para encriptar las imágenes en la carpeta 'img'
-RUN node encryptImages.js
+RUN node encryptImages.js # Agrega esta línea para ejecutar el script
 
 EXPOSE 3000
 
