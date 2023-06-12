@@ -75,7 +75,7 @@ app.get('/encriptar-imagen/:imagenPath', (req, res) => {
 });
 
 // Ruta para servir las imágenes de los encuestadores
-app.use('/img', express.static(path.join(__dirname, 'img')));
+app.use('img', express.static(path.join(__dirname, 'img')));
 
 // Ejecutar la función de encriptación al iniciar el servidor
 fs.createReadStream('encuestadores.csv')
