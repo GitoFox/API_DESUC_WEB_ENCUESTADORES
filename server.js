@@ -20,11 +20,23 @@ app.use((req, res, next) => {
 
 // Función para encriptar una imagen
 function encriptarImagen(imagenPath) {
+  const extension = path.extname(imagenPath);
+  const nombreArchivo = path.basename(imagenPath, extension);
+
   const hash = crypto.createHash('sha256');
-  const imagenData = fs.readFileSync(imagenPath);
-  const imagenEncriptada = hash.update(imagenData).digest('hex');
-  return imagenEncriptada;
+  hash.update(nombreArchivo);
+  const nombreEncriptado = hash.digest('hex');
+
+  const nuevoNombre = nombreEncriptado + extension;
+
+  const nuevoPath = path.join('img', nuevoNombre);
+  fs.renameSync(imagenPath, nuevoPath);
+
+  return nuevoPath;
 }
+
+actualizarCSV(results);
+
 
 // Función para actualizar el CSV con los nombres encriptados de las imágenes
 function actualizarCSV(encuestadores) {
