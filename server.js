@@ -81,9 +81,6 @@ function encriptarImagenes() {
   });
 }
 
-// Ejecutar la función de encriptación al iniciar el servidor
-encriptarImagenes();
-
 // Ruta para buscar a un encuestador por su RUT
 app.get('/encuestadores/:rut', (req, res) => {
   const rut = req.params.rut.trim();
@@ -155,5 +152,7 @@ app.use('/img', express.static(path.join(__dirname, 'img')));
 
 // Iniciar el servidor
 app.listen(PORT, () => {
+  // Ejecutar la función de encriptación al iniciar el servidor
+  encriptarImagenes();
   console.log(`Servidor escuchando en el puerto ${PORT}`);
 });
