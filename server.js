@@ -18,6 +18,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// Función para encriptar una imagen
+function encriptarImagen(imagenPath) {
+  const hash = crypto.createHash('sha256');
+  const imagenData = fs.readFileSync(imagenPath);
+  const imagenEncriptada = hash.update(imagenData).digest('hex');
+  return imagenEncriptada;
+}
+
 // Ejecutar la función de encriptación al iniciar el servidor
 app.get('/encuestadores/:rut', (req, res) => {
   const rut = req.params.rut.trim();
@@ -42,12 +50,13 @@ app.get('/encuestadores/:rut', (req, res) => {
         } else {
           const hashedFileName = path.basename(imagenPath); // Obtén el nombre del archivo encriptado
           imagenURL = 'http://54.174.45.227:3000/img/' + hashedFileName;
+          // Encriptar la imagen y actualizar el path en el CSV
+          const imagenEncriptada = encriptarImagen(imagenPath);
+          encuestador.img = imagenEncriptada;
         }
 
         encuestador.imagenURL = imagenURL;
         encuestador.sinImagen = sinImagen; // Agregar la variable sinImagen al encuestador
-        encuestador.imagenEncriptadaURL = imagenURL; // Nueva propiedad para la imagen encriptada
-
 
         // Leer y procesar los proyectos del encuestador
         const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
