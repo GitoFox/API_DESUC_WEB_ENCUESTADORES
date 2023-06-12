@@ -2,14 +2,15 @@ FROM node:14
 
 WORKDIR /app
 
-COPY package.json package-lock.json /app/
+COPY package*.json ./
+
 RUN npm install
 
-COPY . /app
+COPY . .
 
-# Agregar todas las imágenes de la carpeta img al contenedor
-COPY ./img /app/img
+# Script para encriptar las imágenes en la carpeta 'img'
+RUN node encryptImages.js
 
 EXPOSE 3000
-# Comando para iniciar la aplicación
-CMD ["node", "server.js"]
+
+CMD [ "node", "server.js" ]

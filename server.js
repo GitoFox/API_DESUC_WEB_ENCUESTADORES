@@ -18,24 +18,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// Función para encriptar una imagen y devolver su nuevo path encriptado
-function encriptarImagen(imagenPath) {
-  const extension = path.extname(imagenPath);
-  const nombreArchivo = path.basename(imagenPath, extension);
-
-  const hash = crypto.createHash('sha256');
-  hash.update(nombreArchivo);
-
-  const nuevoNombre = hash.digest('hex') + extension;
-  const nuevoPath = path.join('img', nuevoNombre).replace(/\\/g, '/'); // Reemplazar todas las apariciones de \\ por /
-
-  // Copiar el archivo en lugar de renombrarlo
-  fs.copyFileSync(imagenPath, nuevoPath);
-  fs.unlinkSync(imagenPath); // Eliminar el archivo original
-
-  return nuevoPath;
-}
-
+// Función para generar el hash de una imagen
+fs.readdirSync('img').forEach((file) => {
+  const imagePath = `img/${file}`;
+  const imageBuffer = fs.readFileSync(imagePath);
+  const hash = crypto.createHash('sha256').update(imageBuffer).digest('hex');
+  const encryptedImagePath = `img/${hash}.png`; // Ruta encriptada de la imagen
+  fs.renameSync(imagePath, encryptedImagePath);
+});
 
 // Ruta para buscar a un encuestador por su RUT
 app.get('/encuestadores/:rut', (req, res) => {
@@ -59,11 +49,14 @@ app.get('/encuestadores/:rut', (req, res) => {
           imagenPath = 'img/Saludando.png';
           sinImagen = true; // Establecer la variable sinImagen en true
         } else {
-          // Encriptar la imagen y obtener su nuevo path encriptado
-          imagenPath = encriptarImagen(imagenPath);
+          // Obtener el hash de la imagen
+          const imageHash = generateImageHash(imagenPath);
+          const encryptedImagePath = `img/${imageHash}.png`; // Ruta encriptada de la imagen
+          fs.copyFileSync(imagenPath, encryptedImagePath);
+          imagenPath = encryptedImagePath;
         }
 
-        imagenURL = 'http://54.174.45.227:3000/' + imagenPath; // Usar el nuevo path encriptado
+        imagenURL = 'http://54.174.45.227:3000/' + imagenPath; // URL de la imagen
         encuestador.imagenURL = imagenURL;
         encuestador.sinImagen = sinImagen; // Agregar la variable sinImagen al encuestador
 

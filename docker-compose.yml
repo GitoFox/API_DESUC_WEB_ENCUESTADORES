@@ -1,11 +1,16 @@
-version: '3'
+version: "3"
 services:
-  app:
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - 3000:3000
+      - "3000:3000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3000
     volumes:
-      - ./encuestadores.csv:/app/encuestadores.csv
+      - .:/app
       - ./img:/app/img
+
+
