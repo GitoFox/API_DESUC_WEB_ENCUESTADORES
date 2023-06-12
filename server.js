@@ -46,34 +46,39 @@ app.get('/encriptar-imagenes', (req, res) => {
           console.error('Error al leer el archivo CSV:', err);
           return res.status(500).json({ error: 'Error al leer el archivo CSV' });
         }
-
+      
         const lines = data.split('\n');
         let updatedData = '';
-
+      
         lines.forEach((line) => {
           const columns = line.split(',');
-
-          if (columns.length >= 7 && columns[6].trim() === imagePath) {
-            columns[6] = hashedFilePath; // Actualizar el path encriptado
+      
+          if (columns.length >= 7) {
+            const originalFileName = path.basename(columns[6].trim());
+            const hashedFileName = path.basename(hashedFilePath);
+            
+            if (originalFileName === hashedFileName) {
+              columns[6] = hashedFilePath; // Actualizar el path encriptado
+            }
           }
-
+      
           updatedData += columns.join(',') + '\n';
         });
-
+      
         fs.writeFile(csvPath, updatedData, 'utf8', (err) => {
           if (err) {
             console.error('Error al actualizar el archivo CSV:', err);
             return res.status(500).json({ error: 'Error al actualizar el archivo CSV' });
           }
-
+      
           console.log(`Archivo CSV actualizado con el path encriptado: ${hashedFilePath}`);
         });
+      });
       });
     });
 
     return res.json({ message: 'Imágenes encriptadas correctamente' });
   });
-});
 
 // Ruta para buscar a un encuestador por su RUT
 app.get('/encuestadores/:rut', (req, res) => {
