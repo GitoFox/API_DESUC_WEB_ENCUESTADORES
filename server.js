@@ -26,14 +26,23 @@ function encriptarImagen(imagenPath) {
   return imagenEncriptada;
 }
 
-// Función para guardar los cambios en el archivo CSV
-function guardarCambiosEnCSV(datos, csvFilePath) {
-  const writeStream = fs.createWriteStream(csvFilePath);
-  writeStream.write('\ufeff'); // BOM (Byte Order Mark) para asegurar la codificación correcta
+// Función para actualizar el CSV con los nombres encriptados de las imágenes
+function actualizarCSV(encuestadores) {
+  const writeStream = fs.createWriteStream('encuestadores.csv');
+  writeStream.write('rut,Nombre,Apellidos,proyecto_nom,proyecto_fecha_ini,proyecto_fecha_fin,imagen\n');
 
-  datos.forEach((row) => {
-    const rowValues = Object.values(row);
-    const csvRow = rowValues.join(',');
+  encuestadores.forEach((encuestador) => {
+    const {
+      rut,
+      Nombre,
+      Apellidos,
+      proyecto_nom,
+      proyecto_fecha_ini,
+      proyecto_fecha_fin,
+      imagen
+    } = encuestador;
+
+    const csvRow = `${rut},${Nombre},${Apellidos},${proyecto_nom},${proyecto_fecha_ini},${proyecto_fecha_fin},${imagen}`;
     writeStream.write(csvRow + '\n');
   });
 
@@ -44,13 +53,13 @@ function guardarCambiosEnCSV(datos, csvFilePath) {
 app.get('/encuestadores/:rut', (req, res) => {
   const rut = req.params.rut.trim();
 
-  const results = [];
+  const encuestadores = [];
 
   fs.createReadStream('encuestadores.csv')
     .pipe(csv())
-    .on('data', (data) => results.push(data))
+    .on('data', (data) => encuestadores.push(data))
     .on('end', () => {
-      const encuestador = results.find((encuestador) => encuestador.rut.trim() === rut);
+      const encuestador = encuestadores.find((encuestador) => encuestador.rut.trim() === rut);
 
       if (encuestador) {
         let imagenPath = encuestador.imagen;
@@ -64,17 +73,15 @@ app.get('/encuestadores/:rut', (req, res) => {
         } else {
           const hashedFileName = encriptarImagen(imagenPath); // Generar el nombre encriptado de la imagen
           imagenURL = 'http://54.174.45.227:3000/img/' + hashedFileName;
-          // Actualizar el path en el CSV
-          const rowIndex = results.findIndex((row) => row.rut.trim() === rut);
-          results[rowIndex].imagen = hashedFileName;
-          guardarCambiosEnCSV(results, 'encuestadores.csv');
+          encuestador.imagen = hashedFileName; // Actualizar el campo imagen en el objeto encuestador
+          actualizarCSV(encuestadores); // Actualizar el archivo CSV con los nombres encriptados de las imágenes
         }
 
         encuestador.imagenURL = imagenURL;
         encuestador.sinImagen = sinImagen; // Agregar la variable sinImagen al encuestador
 
         // Leer y procesar los proyectos del encuestador
-        const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
+        const proyectos = encuestadores.filter((proyecto) => proyecto.rut.trim() === rut);
         const currentDate = moment();
 
         const proyectosActivos = [];
