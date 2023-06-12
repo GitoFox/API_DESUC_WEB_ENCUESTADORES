@@ -40,25 +40,13 @@ app.get('/encuestadores/:rut', (req, res) => {
           imagenPath = 'img/Saludando.png';
           sinImagen = true; // Establecer la variable sinImagen en true
         } else {
-          // Encriptar la imagen utilizando un hash
-          const imageBuffer = fs.readFileSync(imagenPath);
-          const hash = crypto.createHash('sha256');
-          hash.update(imageBuffer);
-
-          const hashedFileName = hash.digest('hex') + '.jpg';
-          const hashedFilePath = path.join(__dirname, 'img', hashedFileName);
-
-          fs.writeFileSync(hashedFilePath, imageBuffer);
-
-          imagenPath = hashedFilePath;
-
-          encuestador.imagen = 'img/' + hashedFileName; // Actualizar la ruta en el objeto encuestador
+          const hashedFileName = path.basename(imagenPath); // Obtén el nombre del archivo encriptado
+          imagenURL = 'http://54.174.45.227:3000/img/' + hashedFileName;
         }
 
-        imagenURL = 'http://54.174.45.227:3000/img/' + path.basename(imagenPath); // Obtén solo el nombre del archivo de la imagen
         encuestador.imagenURL = imagenURL;
         encuestador.sinImagen = sinImagen; // Agregar la variable sinImagen al encuestador
-        encuestador.imagenEncriptadaURL = 'http://54.174.45.227:3000/' + encuestador.imagen; // Agregar la URL de la imagen encriptada
+        encuestador.imagenEncriptadaURL = imagenURL; // Nueva propiedad para la imagen encriptada
 
         // Leer y procesar los proyectos del encuestador
         const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
