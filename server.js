@@ -19,13 +19,14 @@ app.use((req, res, next) => {
 });
 
 // Ruta para encriptar las imágenes de la carpeta 'img'
-app.get('/encriptar-imagenes', (req, res) => {
-  const imgFolderPath = path.join(__dirname, 'img');
+const imgFolderPath = path.join(__dirname, 'img');
 
+// Función para encriptar las imágenes y actualizar el archivo CSV
+function encriptarImagenes() {
   fs.readdir(imgFolderPath, (err, files) => {
     if (err) {
       console.error('Error al leer la carpeta de imágenes:', err);
-      return res.status(500).json({ error: 'Error al leer la carpeta de imágenes' });
+      return;
     }
 
     files.forEach((file) => {
@@ -39,42 +40,49 @@ app.get('/encriptar-imagenes', (req, res) => {
       fs.renameSync(imagePath, hashedFilePath);
 
       // Actualizar el CSV con el nuevo path encriptado
-      const csvPath = path.join(__dirname, 'encuestadores.csv');
+      const csvPath = 'encuestadores.csv';
 
       fs.readFile(csvPath, 'utf8', (err, data) => {
         if (err) {
           console.error('Error al leer el archivo CSV:', err);
-          return res.status(500).json({ error: 'Error al leer el archivo CSV' });
+          return;
         }
-
+      
         const lines = data.split('\n');
         let updatedData = '';
-
+      
         lines.forEach((line) => {
           const columns = line.split(',');
-
-          if (columns.length >= 7 && columns[6].trim() === imagePath) {
-            columns[6] = hashedFilePath; // Actualizar el path encriptado
+      
+          if (columns.length >= 7) {
+            const originalFileName = path.basename(columns[6].trim());
+            const hashedFileName = path.basename(hashedFilePath);
+            
+            if (originalFileName === hashedFileName) {
+              columns[6] = hashedFilePath; // Actualizar el path encriptado
+            }
           }
-
+      
           updatedData += columns.join(',') + '\n';
         });
-
+      
         fs.writeFile(csvPath, updatedData, 'utf8', (err) => {
           if (err) {
             console.error('Error al actualizar el archivo CSV:', err);
-            return res.status(500).json({ error: 'Error al actualizar el archivo CSV' });
+            return;
           }
-
+      
           console.log(`Archivo CSV actualizado con el path encriptado: ${hashedFilePath}`);
         });
       });
     });
 
-    return res.json({ message: 'Imágenes encriptadas correctamente' });
+    console.log('Imágenes encriptadas correctamente');
   });
-});
+}
 
+// Ejecutar la función de encriptación al iniciar el servidor
+encriptarImagenes();
 
 // Ruta para buscar a un encuestador por su RUT
 app.get('/encuestadores/:rut', (req, res) => {
