@@ -53,7 +53,7 @@ app.get('/encuestadores/:rut', (req, res) => {
       const encuestador = results.find((encuestador) => encuestador.rut.trim() === rut);
 
       if (encuestador) {
-        let imagenPath = encuestador.img;
+        let imagenPath = encuestador.imagen;
         let imagenURL;
         let sinImagen = false; // Variable para empleados sin imagen
 
@@ -62,15 +62,11 @@ app.get('/encuestadores/:rut', (req, res) => {
           imagenPath = 'img/Saludando.png';
           sinImagen = true; // Establecer la variable sinImagen en true
         } else {
-          const hashedFileName = path.basename(imagenPath); // Obtén el nombre del archivo encriptado
+          const hashedFileName = encriptarImagen(imagenPath); // Generar el nombre encriptado de la imagen
           imagenURL = 'http://54.174.45.227:3000/img/' + hashedFileName;
-          // Encriptar la imagen y actualizar el path en el CSV
-          const imagenEncriptada = encriptarImagen(imagenPath);
-          encuestador.img = imagenEncriptada;
-
           // Actualizar el path en el CSV
           const rowIndex = results.findIndex((row) => row.rut.trim() === rut);
-          results[rowIndex].img = imagenEncriptada;
+          results[rowIndex].imagen = hashedFileName;
           guardarCambiosEnCSV(results, 'encuestadores.csv');
         }
 
