@@ -111,34 +111,6 @@ app.get('/encuestadores/:rut', (req, res) => {
         encuestador.sinImagen = sinImagen; // Agregar la variable sinImagen al encuestador
         encuestador.imagenEncriptadaURL = imagenURL; // Nueva propiedad para la imagen encriptada
 
-
-        // Leer y procesar los proyectos del encuestador
-        const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
-        const currentDate = moment();
-
-        const proyectosActivos = [];
-        const proyectosExpirados = [];
-
-        proyectos.forEach((proyecto) => {
-          const fechaFin = moment(proyecto.proyecto_fecha_fin, 'M/D/YYYY');
-          const estaActivo = currentDate.isSameOrBefore(fechaFin, 'day');
-
-          const proyectoClasificado = {
-            nombre: proyecto.proyecto_nom,
-            fechaInicio: proyecto.proyecto_fecha_ini,
-            fechaFin: proyecto.proyecto_fecha_fin,
-          };
-
-          if (estaActivo) {
-            proyectosActivos.push(proyectoClasificado);
-          } else {
-            proyectosExpirados.push(proyectoClasificado);
-          }
-        });
-
-        encuestador.proyectosActivos = proyectosActivos;
-        encuestador.proyectosExpirados = proyectosExpirados;
-
         // Devolver solo los datos del encuestador y sus proyectos asociados
         res.json(encuestador);
       } else {
