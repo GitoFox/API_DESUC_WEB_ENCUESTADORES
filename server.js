@@ -32,108 +32,63 @@ function encriptarImagen(imagenPath) {
   const nuevoPath = path.join('img', nuevoNombre);
   fs.renameSync(imagenPath, nuevoPath);
 
-
-  actualizarCSV(results);
+  actualizarCSV();
 
   return nuevoPath;
-
 }
-
-
 
 // Función para actualizar el CSV con los nombres encriptados de las imágenes
-function actualizarCSV(results) {
-  const writeStream = fs.createWriteStream('encuestadores.csv');
-  writeStream.write('rut,Nombre,Apellidos,proyecto_nom,proyecto_fecha_ini,proyecto_fecha_fin,imagen\n');
-
-  encuestadores.forEach((encuestador) => {
-    const {
-      rut,
-      Nombre,
-      Apellidos,
-      proyecto_nom,
-      proyecto_fecha_ini,
-      proyecto_fecha_fin,
-      imagen
-    } = encuestador;
-
-    const csvRow = `${rut},${Nombre},${Apellidos},${proyecto_nom},${proyecto_fecha_ini},${proyecto_fecha_fin},${imagen}`;
-    writeStream.write(csvRow + '\n');
-  });
-
-  writeStream.end();
-}
-
-// Ejecutar la función de encriptación al iniciar el servidor
-app.get('/encuestadores/:rut', (req, res) => {
-  const rut = req.params.rut.trim();
-
+function actualizarCSV() {
   const encuestadores = [];
 
   fs.createReadStream('encuestadores.csv')
     .pipe(csv())
     .on('data', (data) => encuestadores.push(data))
     .on('end', () => {
-      const encuestador = encuestadores.find((encuestador) => encuestador.rut.trim() === rut);
+      const writeStream = fs.createWriteStream('encuestadores.csv');
+      writeStream.write('rut,Nombre,Apellidos,proyecto_nom,proyecto_fecha_ini,proyecto_fecha_fin,imagen\n');
 
-      if (encuestador) {
-        let imagenPath = encuestador.imagen;
-        let imagenURL;
-        let sinImagen = false; // Variable para empleados sin imagen
+      encuestadores.forEach((encuestador) => {
+        const {
+          rut,
+          Nombre,
+          Apellidos,
+          proyecto_nom,
+          proyecto_fecha_ini,
+          proyecto_fecha_fin,
+          imagen
+        } = encuestador;
 
-        if (!imagenPath || imagenPath === 'NA' || imagenPath === '') {
-          // Asignar la ruta de la imagen fija cuando no hay imagen disponible
-          imagenPath = 'img/Saludando.png';
-          sinImagen = true; // Establecer la variable sinImagen en true
-        } else {
-          const hashedFileName = encriptarImagen(imagenPath); // Generar el nombre encriptado de la imagen
-          imagenURL = 'http://54.174.45.227:3000/img/' + hashedFileName;
-          encuestador.imagen = hashedFileName; // Actualizar el campo imagen en el objeto encuestador
-          actualizarCSV(encuestadores); // Actualizar el archivo CSV con los nombres encriptados de las imágenes
-        }
+        const csvRow = `${rut},${Nombre},${Apellidos},${proyecto_nom},${proyecto_fecha_ini},${proyecto_fecha_fin},${imagen}`;
+        writeStream.write(csvRow + '\n');
+      });
 
-        encuestador.imagenURL = imagenURL;
-        encuestador.sinImagen = sinImagen; // Agregar la variable sinImagen al encuestador
-
-        // Leer y procesar los proyectos del encuestador
-        const proyectos = encuestadores.filter((proyecto) => proyecto.rut.trim() === rut);
-        const currentDate = moment();
-
-        const proyectosActivos = [];
-        const proyectosExpirados = [];
-
-        proyectos.forEach((proyecto) => {
-          const fechaFin = moment(proyecto.proyecto_fecha_fin, 'M/D/YYYY');
-          const estaActivo = currentDate.isSameOrBefore(fechaFin, 'day');
-
-          const proyectoClasificado = {
-            nombre: proyecto.proyecto_nom,
-            fechaInicio: proyecto.proyecto_fecha_ini,
-            fechaFin: proyecto.proyecto_fecha_fin,
-          };
-
-          if (estaActivo) {
-            proyectosActivos.push(proyectoClasificado);
-          } else {
-            proyectosExpirados.push(proyectoClasificado);
-          }
-        });
-
-        encuestador.proyectosActivos = proyectosActivos;
-        encuestador.proyectosExpirados = proyectosExpirados;
-
-        // Devolver solo los datos del encuestador y sus proyectos asociados
-        res.json(encuestador);
-      } else {
-        res.status(404).json({ error: 'Encuestador no encontrado' });
-      }
+      writeStream.end();
     });
+}
+
+// Ruta para encriptar una imagen y actualizar el CSV
+app.get('/encriptar-imagen/:imagenPath', (req, res) => {
+  const imagenPath = req.params.imagenPath.trim();
+  const hashedFileName = encriptarImagen(imagenPath);
+  res.json({ hashedFileName });
 });
 
 // Ruta para servir las imágenes de los encuestadores
 app.use('/img', express.static(path.join(__dirname, 'img')));
 
-// Iniciar el servidor
-app.listen(PORT, () => {
-  console.log(`Servidor escuchando en el puerto ${PORT}`);
-});
+// Ejecutar la función de encriptación al iniciar el servidor
+fs.createReadStream('encuestadores.csv')
+  .pipe(csv())
+  .on('data', (data) => {
+    const imagenPath = data.imagen;
+    if (imagenPath && imagenPath !== 'NA' && imagenPath !== '') {
+      encriptarImagen(imagenPath);
+    }
+  })
+  .on('end', () => {
+    // Iniciar el servidor después de encriptar todas las imágenes
+    app.listen(PORT, () => {
+      console.log(`Servidor escuchando en el puerto ${PORT}`);
+    });
+  });
