@@ -56,6 +56,7 @@ app.get('/encuestadores/:rut', (req, res) => {
         imagenURL = 'http://54.174.45.227:3000/img/' + path.basename(imagenPath); // Obtén solo el nombre del archivo de la imagen
         encuestador.imagenURL = imagenURL;
         encuestador.sinImagen = sinImagen; // Agregar la variable sinImagen al encuestador
+        encuestador.imagenEncriptadaURL = imagenURL; // Nueva propiedad para la imagen encriptada
 
         // Leer y procesar los proyectos del encuestador
         const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
