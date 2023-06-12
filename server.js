@@ -29,11 +29,13 @@ function encriptarImagen(imagenPath) {
   const nuevoNombre = hash.digest('hex') + extension;
   const nuevoPath = path.join('img', nuevoNombre);
 
-  // Renombrar la imagen
-  fs.renameSync(imagenPath, nuevoPath);
+  // Copiar el archivo en lugar de renombrarlo
+  fs.copyFileSync(imagenPath, nuevoPath);
+  fs.unlinkSync(imagenPath); // Eliminar el archivo original
 
   return nuevoPath;
 }
+
 
 // Ruta para buscar a un encuestador por su RUT
 app.get('/encuestadores/:rut', (req, res) => {
