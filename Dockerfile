@@ -1,20 +1,15 @@
-# Utiliza una imagen base con Node.js instalado
 FROM node:14
 
-# Establece el directorio de trabajo en la aplicación
 WORKDIR /app
 
-# Copia los archivos de la aplicación al contenedor
 COPY package.json package-lock.json /app/
 RUN npm install
 
-# Copia la carpeta img al contenedor
-COPY img /app/img
-
 COPY . /app
 
-# Expone el puerto 3000 en el contenedor
-EXPOSE 3000
+# Agregar todas las imágenes de la carpeta img al contenedor
+COPY ./img /app/img
 
-# Comando para iniciar el servidor
-CMD ["npm", "start"]
+EXPOSE 3000
+# Comando para iniciar la aplicación
+CMD ["node", "server.js"]
