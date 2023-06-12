@@ -28,18 +28,16 @@ function encriptarImagen(imagenPath) {
 
 // Función para guardar los cambios en el archivo CSV
 function guardarCambiosEnCSV(datos, csvFilePath) {
-  const csvWriter = csv.writer({ sendHeaders: false });
-
   const writeStream = fs.createWriteStream(csvFilePath);
   writeStream.write('\ufeff'); // BOM (Byte Order Mark) para asegurar la codificación correcta
 
-  csvWriter.pipe(writeStream);
-
   datos.forEach((row) => {
-    csvWriter.write(row);
+    const rowValues = Object.values(row);
+    const csvRow = rowValues.join(',');
+    writeStream.write(csvRow + '\n');
   });
 
-  csvWriter.end();
+  writeStream.end();
 }
 
 // Ejecutar la función de encriptación al iniciar el servidor
