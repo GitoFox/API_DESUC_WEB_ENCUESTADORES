@@ -32,14 +32,17 @@ function encriptarImagen(imagenPath) {
   const nuevoPath = path.join('img', nuevoNombre);
   fs.renameSync(imagenPath, nuevoPath);
 
+
+  actualizarCSV(results);
+
   return nuevoPath;
+
 }
 
-actualizarCSV(results);
 
 
 // Función para actualizar el CSV con los nombres encriptados de las imágenes
-function actualizarCSV(encuestadores) {
+function actualizarCSV(results) {
   const writeStream = fs.createWriteStream('encuestadores.csv');
   writeStream.write('rut,Nombre,Apellidos,proyecto_nom,proyecto_fecha_ini,proyecto_fecha_fin,imagen\n');
 
