@@ -1,7 +1,12 @@
 const fs = require('fs');
 const crypto = require('crypto');
+const path = require('path');
+const csv = require('csv-parser');
 
 const imagesFolder = '/app/img/';
+const csvFilePath = 'encuestadores.csv';
+
+const encryptedImages = [];
 
 fs.readdir(imagesFolder, (err, files) => {
   if (err) {
@@ -17,7 +22,34 @@ fs.readdir(imagesFolder, (err, files) => {
 
     fs.renameSync(imagePath, encryptedImagePath);
     console.log(`Imagen encriptada: ${encryptedImagePath}`);
+
+    encryptedImages.push({ originalPath: imagePath, encryptedPath: encryptedImagePath });
   });
 
   console.log('Proceso de encriptación finalizado.');
+
+  // Actualizar el archivo CSV con las nuevas direcciones de las imágenes encriptadas
+  updateCSV(csvFilePath, encryptedImages);
 });
+
+function updateCSV(csvFilePath, encryptedImages) {
+  const rows = [];
+
+  fs.createReadStream(csvFilePath)
+    .pipe(csv())
+    .on('data', (row) => {
+      const encryptedImage = encryptedImages.find((img) => img.originalPath === row.imagen);
+
+      if (encryptedImage) {
+        row.imagen = encryptedImage.encryptedPath;
+      }
+
+      rows.push(row);
+    })
+    .on('end', () => {
+      const updatedCSV = rows.map((row) => Object.values(row).join(',')).join('\n');
+
+      fs.writeFileSync(csvFilePath, updatedCSV);
+      console.log('Archivo CSV actualizado correctamente.');
+    });
+}
