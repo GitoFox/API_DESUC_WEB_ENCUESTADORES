@@ -10,6 +10,12 @@ services:
       - HOST=0.0.0.0
       - PORT=3000
     volumes:
-      - ./img:/app/img
       - .:/app
-    command: node /app/encrypt-images.js
+    command: ["node", "server.js"]
+  encryptor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    command: ["node", "encrypt-images.js"]
