@@ -18,9 +18,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Mapa para almacenar la correspondencia entre nombres de archivo originales y nombres encriptados
-const encryptedFilesMap = new Map();
-
 // Función para encriptar una imagen
 function encryptImage(fileName) {
   return new Promise((resolve, reject) => {
@@ -37,8 +34,6 @@ function encryptImage(fileName) {
         if (err) {
           reject(err);
         } else {
-          // Almacenar la correspondencia entre nombres originales y encriptados
-          encryptedFilesMap.set(fileName, hashedFileName);
           resolve(hashedFileName);
         }
       });
@@ -49,34 +44,28 @@ function encryptImage(fileName) {
 // Función para encriptar todas las imágenes
 async function encryptAllImages() {
   const files = fs.readdirSync('img');
+  const encryptedFiles = {};
 
   for (let file of files) {
     if (file !== '.DS_Store') {
-      await encryptImage(file);
+      const hashedFileName = await encryptImage(file);
+      encryptedFiles[file] = hashedFileName;
     }
   }
-}
 
-// Middleware para encriptar las imágenes y actualizar el CSV al iniciar el servidor
-app.use(async (req, res, next) => {
-  // Encriptar imágenes y actualizar el CSV solo en el primer inicio del servidor
-  if (!fs.existsSync('img/encrypted')) {
-    fs.mkdirSync('img/encrypted');
-    await encryptAllImages();
-    updateCsvFile();
-  }
-  next();
-});
+  return encryptedFiles;
+}
 
 // Función para actualizar el CSV
 async function updateCsvFile() {
+  const encryptedFiles = await encryptAllImages();
   const results = [];
 
   fs.createReadStream('encuestadores.csv')
     .pipe(csv())
     .on('data', (data) => {
-      if (data.imagen in encryptedFilesMap) {
-        data.imagen = `img/encrypted/${encryptedFilesMap.get(data.imagen)}`;
+      if (data.imagen in encryptedFiles) {
+        data.imagen = `img/encrypted/${encryptedFiles[data.imagen]}`;
       }
       results.push(data);
     })
@@ -89,13 +78,14 @@ async function updateCsvFile() {
       writer.writeRecords(results);
     });
 }
+
 // Ruta para buscar a un encuestador por su RUT
 app.get('/encuestadores/:rut', (req, res) => {
   const rut = req.params.rut.trim();
 
   const results = [];
 
-  fs.createReadStream('encuestadores_new.csv') // Cambiar aquí el nombre del archivo a 'encuestadores_new.csv'
+  fs.createReadStream('encuestadores.csv')
     .pipe(csv())
     .on('data', (data) => results.push(data))
     .on('end', () => {
@@ -110,7 +100,7 @@ app.get('/encuestadores/:rut', (req, res) => {
           imagenPath = 'img/Saludando.png';
         }
 
-        imagenURL = 'http://54.165.24.96:3000/img/' + path.basename(imagenPath); // Obtén solo el nombre del archivo de la imagen
+        imagenURL = 'http://localhost:3000/img/' + path.basename(imagenPath); // Obtén solo el nombre del archivo de la imagen
         encuestador.imagenURL = imagenURL;
 
         // Leer y procesar los proyectos del encuestador
@@ -150,6 +140,18 @@ app.get('/encuestadores/:rut', (req, res) => {
 
 // Ruta para servir las imágenes de los encuestadores
 app.use('/img', express.static(path.join(__dirname, 'img')));
+
+// Middleware para encriptar las imágenes y actualizar el CSV al iniciar el servidor
+app.use(async (req, res, next) => {
+  if (!fs.existsSync('img/encrypted')) {
+    fs.mkdirSync('img/encrypted');
+  }
+
+  await encryptAllImages();
+  updateCsvFile();
+
+  next();
+});
 
 // Iniciar el servidor
 app.listen(PORT, () => {
