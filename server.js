@@ -18,6 +18,25 @@ app.use((req, res, next) => {
   next();
 });
 
+// Función para encriptar una imagen y generar el nuevo path encriptado
+const encriptarImagen = (imagenPath) => {
+  if (!imagenPath || imagenPath === 'NA' || imagenPath === '') {
+    // Asignar la ruta de la imagen fija cuando no hay imagen disponible
+    return 'img/Saludando.png';
+  }
+
+  // Generar un hash único para el nombre de la imagen
+  const hash = crypto.createHash('sha256');
+  const imageName = hash.update(imagenPath).digest('hex');
+  const imageExtension = path.extname(imagenPath);
+  const encryptedImagePath = `images/${imageName}${imageExtension}`;
+
+  // Copiar la imagen original a la carpeta "images" con el nuevo nombre encriptado
+  fs.copyFileSync(imagenPath, encryptedImagePath);
+
+  return encryptedImagePath;
+};
+
 // Ruta para buscar a un encuestador por su RUT
 app.get('/encuestadores/:rut', (req, res) => {
   const rut = req.params.rut.trim();
@@ -28,34 +47,21 @@ app.get('/encuestadores/:rut', (req, res) => {
     .pipe(csv())
     .on('data', (data) => results.push(data))
     .on('end', () => {
-      const encuestador = results.find((encuestador) => encuestador.rut.trim() === rut);
+      const encuestador = results.find((encuestador) => encuestador.RUT.trim() === rut);
 
       if (encuestador) {
-        let imagenPath = encuestador.imagen;
-        let imagenURL;
+        // Encriptar todas las imágenes correspondientes al encuestador
+        const proyectos = results.filter((proyecto) => proyecto.RUT.trim() === rut);
+        proyectos.forEach((proyecto) => {
+          const imagenPath = proyecto.imagen;
+          proyecto.imagen = encriptarImagen(imagenPath);
+        });
 
-        if (!imagenPath || imagenPath === 'NA' || imagenPath === '') {
-          // Asignar la ruta de la imagen fija cuando no hay imagen disponible
-          imagenPath = 'img/Saludando.png';
-        } else {
-          // Generar un hash único para el nombre de la imagen
-          const hash = crypto.createHash('sha256');
-          const imageName = hash.update(imagenPath).digest('hex');
-          const imageExtension = path.extname(imagenPath);
-          const encryptedImagePath = `images/${imageName}${imageExtension}`;
-        
-          // Copiar la imagen original a la carpeta "images" con el nuevo nombre encriptado
-          fs.copyFileSync(imagenPath, encryptedImagePath);
-        
-          // Actualiza el path de la imagen en el objeto encuestador
-          encuestador.imagen = encryptedImagePath;
-        }
-
-        imagenURL = 'http://54.165.24.96:3000/img/' + path.basename(encuestador.imagen); // Obtén solo el nombre del archivo de la imagen
+        // Obtener la URL de la primera imagen encriptada
+        const imagenURL = 'http://54.165.24.96:3000/img/' + path.basename(proyectos[0].imagen);
         encuestador.imagenURL = imagenURL;
 
         // Leer y procesar los proyectos del encuestador
-        const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
         const currentDate = moment();
 
         const proyectosActivos = [];
@@ -92,6 +98,40 @@ app.get('/encuestadores/:rut', (req, res) => {
 // Ruta para servir las imágenes de los encuestadores
 app.use('/img', express.static(path.join(__dirname, 'images')));
 
+// Función para encriptar todas las imágenes y actualizar los paths en el archivo CSV
+const encriptarTodasLasImagenes = () => {
+  const results = [];
+
+  fs.createReadStream('encuestadores.csv')
+    .pipe(csv())
+    .on('data', (data) => results.push(data))
+    .on('end', () => {
+    results.forEach((encuestador) => {
+      const rut = encuestador.RUT.trim();
+      const proyectos = results.filter((proyecto) => proyecto.RUT.trim() === rut);
+      
+      proyectos.forEach((proyecto) => {
+        const imagenPath = proyecto.imagen;
+        const encryptedImagePath = encriptarImagen(imagenPath);
+        proyecto.imagen = encryptedImagePath;
+      });
+    });
+
+    // Guardar los cambios en el archivo CSV
+    const writer = fs.createWriteStream('encuestadores.csv');
+    writer.write('RUT,Nombre,Apellidos,imagen\n');
+    results.forEach((encuestador) => {
+      const proyectos = results.filter((proyecto) => proyecto.RUT.trim() === encuestador.RUT.trim());
+      proyectos.forEach((proyecto) => {
+        writer.write(`${encuestador.RUT},${encuestador.Nombre},${encuestador.Apellidos},${proyecto.imagen}\n`);
+      });
+    });
+    writer.end();
+  });
+};
+
+// Encriptar todas las imágenes al iniciar el servidor
+encriptarTodasLasImagenes();
 
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en el puerto ${PORT}`);
