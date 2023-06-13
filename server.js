@@ -100,7 +100,10 @@ const csvStream = fastcsv.parseFile('encuestadores.csv', {headers: true})
     console.log(`Parsed ${rowCount} rows`);
 
     for(let row of csvData) {
-      const oldPath = path.join(__dirname, row.imagen);
+      // Actualizar el path de la imagen a formato UNIX si está en formato Windows
+      const formattedImagePath = row.imagen.split('\\').join('/');
+      
+      const oldPath = path.join(__dirname, formattedImagePath);
       const hash = await hashFile(oldPath);
       const ext = path.extname(oldPath);
       const newPath = path.join(path.dirname(oldPath), `${hash}${ext}`);
