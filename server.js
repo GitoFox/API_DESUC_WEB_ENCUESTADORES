@@ -5,11 +5,11 @@ const path = require('path');
 const cors = require('cors');
 const moment = require('moment');
 const crypto = require('crypto');
-const csvWriter = require('csv-writer').createObjectCsvWriter;
 
 const app = express();
 const PORT = 3000;
 
+// Middleware para parsear el cuerpo de las solicitudes como JSON
 app.use(express.json());
 app.use(cors());
 
@@ -17,67 +17,6 @@ app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
   next();
 });
-
-// Función para encriptar una imagen
-function encryptImage(fileName) {
-  return new Promise((resolve, reject) => {
-    const input = fs.createReadStream(`img/${fileName}`);
-    const hash = crypto.createHash('sha256');
-    input.pipe(hash);
-
-    hash.on('data', (hashBuffer) => {
-      const hashedFileName = hashBuffer.toString('hex');
-      input.close();
-
-      // Renombrar y mover la imagen encriptada
-      fs.rename(`img/${fileName}`, `img/encrypted/${hashedFileName}`, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(hashedFileName);
-        }
-      });
-    });
-  });
-}
-
-// Función para encriptar todas las imágenes
-async function encryptAllImages() {
-  const files = fs.readdirSync('img');
-  const encryptedFiles = {};
-
-  for (let file of files) {
-    if (file !== '.DS_Store') {
-      const hashedFileName = await encryptImage(file);
-      encryptedFiles[file] = hashedFileName;
-    }
-  }
-
-  return encryptedFiles;
-}
-
-// Función para actualizar el CSV
-async function updateCsvFile() {
-  const encryptedFiles = await encryptAllImages();
-  const results = [];
-
-  fs.createReadStream('encuestadores.csv')
-    .pipe(csv())
-    .on('data', (data) => {
-      if (data.imagen in encryptedFiles) {
-        data.imagen = `img/encrypted/${encryptedFiles[data.imagen]}`;
-      }
-      results.push(data);
-    })
-    .on('end', () => {
-      const writer = csvWriter({
-        path: 'encuestadores.csv',
-        header: Object.keys(results[0]).map((key) => ({ id: key, title: key })),
-      });
-
-      writer.writeRecords(results);
-    });
-}
 
 // Ruta para buscar a un encuestador por su RUT
 app.get('/encuestadores/:rut', (req, res) => {
@@ -98,13 +37,21 @@ app.get('/encuestadores/:rut', (req, res) => {
         if (!imagenPath || imagenPath === 'NA' || imagenPath === '') {
           // Asignar la ruta de la imagen fija cuando no hay imagen disponible
           imagenPath = 'img/Saludando.png';
-        } else if (imagenPath.startsWith('img/encrypted/')) {
-          // Obtener el nombre del archivo de la imagen encriptada
-          const hashedFileName = imagenPath.split('/').pop();
-          imagenPath = `img/encrypted/${hashedFileName}`;
+        } else {
+          // Generar un hash único para el nombre de la imagen
+          const hash = crypto.createHash('sha256');
+          const imageName = hash.update(imagenPath).digest('hex');
+          const imageExtension = path.extname(imagenPath);
+          const encryptedImagePath = `images/${imageName}${imageExtension}`;
+
+          // Mueve la imagen original a la carpeta "images" y renómbrala con el hash encriptado
+          fs.renameSync(imagenPath, encryptedImagePath);
+
+          // Actualiza el path de la imagen en el objeto encuestador
+          encuestador.imagen = encryptedImagePath;
         }
 
-        imagenURL = 'http://54.165.24.96:3000/' + imagenPath;
+        imagenURL = 'http://54.165.24.96:3000//img/' + path.basename(encuestador.imagen); // Obtén solo el nombre del archivo de la imagen
         encuestador.imagenURL = imagenURL;
 
         // Leer y procesar los proyectos del encuestador
@@ -142,21 +89,8 @@ app.get('/encuestadores/:rut', (req, res) => {
     });
 });
 
-
 // Ruta para servir las imágenes de los encuestadores
-app.use('/img', express.static(path.join(__dirname, 'img')));
-
-// Middleware para encriptar las imágenes y actualizar el CSV al iniciar el servidor
-app.use(async (req, res, next) => {
-  if (!fs.existsSync('img/encrypted')) {
-    fs.mkdirSync('img/encrypted');
-  }
-
-  await encryptAllImages();
-  updateCsvFile();
-
-  next();
-});
+app.use('/img', express.static(path.join(__dirname, 'images')));
 
 // Iniciar el servidor
 app.listen(PORT, () => {

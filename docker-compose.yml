@@ -1,10 +1,10 @@
 version: '3'
 services:
-  api:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - '3000:3000'
     volumes:
-      - ./img:/usr/src/app/img
+      - ./images:/app/images

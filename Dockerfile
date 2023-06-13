@@ -1,20 +1,19 @@
-# Usar una imagen de Node.js LTS (Long Term Support)
-FROM node:lts
+# Seleccionar la imagen base
+FROM node:14
 
-# Crear directorio de la aplicación en el contenedor
-WORKDIR /usr/src/app
+# Crear el directorio de trabajo en el contenedor
+WORKDIR /app
 
-# Copiar package.json y package-lock.json
+# Copiar los archivos de la aplicación al contenedor
 COPY package*.json ./
+COPY server.js ./
+COPY encuestadores.csv ./
+COPY img/ ./img/
 
-# Instalar dependencias
+# Instalar las dependencias
 RUN npm install
 
-# Copiar el resto de los archivos de la aplicación
-COPY . .
-
-
-# Exponer el puerto 3000
+# Exponer el puerto
 EXPOSE 3000
 
 # Comando para iniciar la aplicación
