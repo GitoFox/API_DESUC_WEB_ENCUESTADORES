@@ -107,11 +107,11 @@ const encriptarTodasLasImagenes = () => {
     .pipe(csv())
     .on('data', (data) => results.push(data))
     .on('end', () => {
-      const ruts = results.map((encuestador) => encuestador.RUT.trim());
+      const ruts = results.map((encuestador) => encuestador.rut.trim());
       const uniqueRuts = [...new Set(ruts)];
 
       uniqueRuts.forEach((rut) => {
-        const proyectos = results.filter((proyecto) => proyecto.RUT.trim() === rut);
+        const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
 
         proyectos.forEach((proyecto) => {
           const imagenPath = proyecto.imagen;
@@ -122,11 +122,11 @@ const encriptarTodasLasImagenes = () => {
 
       // Guardar los cambios en el archivo CSV
       const writer = fs.createWriteStream('encuestadores.csv');
-      writer.write('RUT,Nombre,Apellidos,imagen\n');
+      writer.write('rut,Nombre,Apellidos,imagen\n');
       results.forEach((encuestador) => {
-        const proyectos = results.filter((proyecto) => proyecto.RUT.trim() === encuestador.RUT.trim());
+        const proyectos = results.filter((proyecto) => proyecto.rut.trim() === encuestador.rut.trim());
         proyectos.forEach((proyecto) => {
-          writer.write(`${encuestador.RUT},${encuestador.Nombre},${encuestador.Apellidos},${proyecto.imagen}\n`);
+          writer.write(`${encuestador.rut},${encuestador.Nombre},${encuestador.Apellidos},${proyecto.imagen}\n`);
         });
       });
       writer.end();
