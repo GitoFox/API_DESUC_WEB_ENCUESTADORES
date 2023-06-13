@@ -5,13 +5,15 @@ FROM node:lts
 WORKDIR /usr/src/app
 
 # Copiar package.json y package-lock.json
-COPY package*.json ./
+
 
 # Instalar dependencias
 RUN npm install
 
 # Copiar el resto de los archivos de la aplicación
-COPY . .
+COPY package*.json ./
+COPY server.js .
+COPY img img
 
 RUN ls -la /usr/src/app/img/
 
