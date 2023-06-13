@@ -21,7 +21,7 @@ app.use((req, res, next) => {
 
 const processLine = (line) => {
   let imagenPath = line.imagen;
-  let imagenURL;z
+  let imagenURL;
 
   if (!imagenPath || imagenPath === 'NA' || imagenPath === '') {
     imagenPath = 'img/Saludando.png';
