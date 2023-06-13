@@ -1,6 +1,5 @@
 const express = require('express');
-const csv = require('csvtojson');
-const json2csv = require('json2csv').parse;
+const csv = require('csv-parser');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
@@ -19,40 +18,43 @@ app.use((req, res, next) => {
   next();
 });
 
-const processLine = (line) => {
-  let imagenPath = line.imagen;
-  let imagenURL;
-
-  if (!imagenPath || imagenPath === 'NA' || imagenPath === '') {
-    imagenPath = 'img/Saludando.png';
-  } else {
-    const hash = crypto.createHash('sha256');
-    const imageName = hash.update(imagenPath).digest('hex');
-    const imageExtension = path.extname(imagenPath);
-    const encryptedImagePath = `images/${imageName}${imageExtension}`;
-    fs.copyFileSync(imagenPath, encryptedImagePath);
-    line.imagen = encryptedImagePath;
-  }
-
-  imagenURL = 'http://54.165.24.96:3000/img/' + path.basename(line.imagen);
-  line.imagenURL = imagenURL;
-
-  return line;
-};
-
+// Ruta para buscar a un encuestador por su RUT
 app.get('/encuestadores/:rut', (req, res) => {
   const rut = req.params.rut.trim();
-
   const results = [];
 
   fs.createReadStream('encuestadores.csv')
     .pipe(csv())
-    .on('data', (data) => results.push(data))
+    .on('data', (data) => {
+      console.log(data); // Imprimir los datos para depuración
+      results.push(data);
+    })
     .on('end', () => {
-      const encuestador = results.find((encuestador) => encuestador.rut.trim() === rut);
+      console.log(results); // Imprimir los resultados para depuración
+
+      const encuestador = results.find((encuestador) => encuestador.rut && encuestador.rut.trim() === rut);
 
       if (encuestador) {
-        const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
+        let imagenPath = encuestador.imagen;
+        let imagenURL;
+
+        if (!imagenPath || imagenPath === 'NA' || imagenPath.trim() === '') {
+          imagenPath = 'img/Saludando.png';
+        } else {
+          const hash = crypto.createHash('sha256');
+          const imageName = hash.update(imagenPath).digest('hex');
+          const imageExtension = path.extname(imagenPath);
+          const encryptedImagePath = `images/${imageName}${imageExtension}`;
+
+          fs.copyFileSync(imagenPath, encryptedImagePath);
+
+          encuestador.imagen = encryptedImagePath;
+        }
+
+        imagenURL = 'http://54.165.24.96:3000/img/' + path.basename(encuestador.imagen);
+        encuestador.imagenURL = imagenURL;
+
+        const proyectos = results.filter((proyecto) => proyecto.rut && proyecto.rut.trim() === rut);
         const currentDate = moment();
 
         const proyectosActivos = [];
@@ -85,16 +87,9 @@ app.get('/encuestadores/:rut', (req, res) => {
     });
 });
 
+// Ruta para servir las imágenes de los encuestadores
 app.use('/img', express.static(path.join(__dirname, 'images')));
 
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en el puerto ${PORT}`);
-
-  csv()
-    .fromFile('encuestadores.csv')
-    .then((results) => {
-      const updatedResults = results.map(processLine);
-      const updatedCsv = json2csv(updatedResults);
-      fs.writeFileSync('encuestadores.csv', updatedCsv, 'utf8');
-    });
 });
