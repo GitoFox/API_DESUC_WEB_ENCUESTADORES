@@ -43,10 +43,10 @@ app.get('/encuestadores/:rut', (req, res) => {
           const imageName = hash.update(imagenPath).digest('hex');
           const imageExtension = path.extname(imagenPath);
           const encryptedImagePath = `images/${imageName}${imageExtension}`;
-
-          // Mueve la imagen original a la carpeta "images" y renómbrala con el hash encriptado
-          fs.renameSync(imagenPath, encryptedImagePath);
-
+        
+          // Copiar la imagen original a la carpeta "images" con el nuevo nombre encriptado
+          fs.copyFileSync(imagenPath, encryptedImagePath);
+        
           // Actualiza el path de la imagen en el objeto encuestador
           encuestador.imagen = encryptedImagePath;
         }
