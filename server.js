@@ -99,6 +99,7 @@ app.get('/encuestadores/:rut', (req, res) => {
 app.use('/img', express.static(path.join(__dirname, 'images')));
 
 // Función para encriptar todas las imágenes y actualizar los paths en el archivo CSV
+// Función para encriptar todas las imágenes y actualizar los paths en el archivo CSV
 const encriptarTodasLasImagenes = () => {
   const results = [];
 
@@ -106,29 +107,32 @@ const encriptarTodasLasImagenes = () => {
     .pipe(csv())
     .on('data', (data) => results.push(data))
     .on('end', () => {
-    results.forEach((encuestador) => {
-      const rut = encuestador.RUT.trim();
-      const proyectos = results.filter((proyecto) => proyecto.RUT.trim() === rut);
-      
-      proyectos.forEach((proyecto) => {
-        const imagenPath = proyecto.imagen;
-        const encryptedImagePath = encriptarImagen(imagenPath);
-        proyecto.imagen = encryptedImagePath;
-      });
-    });
+      const ruts = results.map((encuestador) => encuestador.RUT.trim());
+      const uniqueRuts = [...new Set(ruts)];
 
-    // Guardar los cambios en el archivo CSV
-    const writer = fs.createWriteStream('encuestadores.csv');
-    writer.write('RUT,Nombre,Apellidos,imagen\n');
-    results.forEach((encuestador) => {
-      const proyectos = results.filter((proyecto) => proyecto.RUT.trim() === encuestador.RUT.trim());
-      proyectos.forEach((proyecto) => {
-        writer.write(`${encuestador.RUT},${encuestador.Nombre},${encuestador.Apellidos},${proyecto.imagen}\n`);
+      uniqueRuts.forEach((rut) => {
+        const proyectos = results.filter((proyecto) => proyecto.RUT.trim() === rut);
+
+        proyectos.forEach((proyecto) => {
+          const imagenPath = proyecto.imagen;
+          const encryptedImagePath = encriptarImagen(imagenPath);
+          proyecto.imagen = encryptedImagePath;
+        });
       });
+
+      // Guardar los cambios en el archivo CSV
+      const writer = fs.createWriteStream('encuestadores.csv');
+      writer.write('RUT,Nombre,Apellidos,imagen\n');
+      results.forEach((encuestador) => {
+        const proyectos = results.filter((proyecto) => proyecto.RUT.trim() === encuestador.RUT.trim());
+        proyectos.forEach((proyecto) => {
+          writer.write(`${encuestador.RUT},${encuestador.Nombre},${encuestador.Apellidos},${proyecto.imagen}\n`);
+        });
+      });
+      writer.end();
     });
-    writer.end();
-  });
 };
+
 
 // Encriptar todas las imágenes al iniciar el servidor
 encriptarTodasLasImagenes();
