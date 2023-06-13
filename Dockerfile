@@ -13,6 +13,8 @@ RUN npm install
 # Copiar el resto de los archivos de la aplicación
 COPY . .
 
+RUN ls -la /usr/src/app/img/
+
 # Ejecuta el script que encripta las imágenes y modifica el archivo CSV
 RUN node encryptImagesAndModifyCSV.js
 
