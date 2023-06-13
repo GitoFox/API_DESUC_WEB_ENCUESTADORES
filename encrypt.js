@@ -23,6 +23,10 @@ function encryptImage(fileName) {
     });
 }
 
+if (!fs.existsSync('img/encrypted')) {
+    fs.mkdirSync('img/encrypted');
+}
+
 async function encryptAllImages() {
     const files = fs.readdirSync('img');
     const encryptedFiles = {};
