@@ -51,7 +51,6 @@ app.get('/encuestadores/:rut', (req, res) => {
 
       if (encuestador) {
         // Encriptar todas las imágenes correspondientes al encuestador
-        const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
         proyectos.forEach((proyecto) => {
           const imagenPath = proyecto.imagen;
           proyecto.imagen = encriptarImagen(imagenPath);
@@ -62,25 +61,34 @@ app.get('/encuestadores/:rut', (req, res) => {
         encuestador.imagenURL = imagenURL;
 
         // Leer y procesar los proyectos del encuestador
+        const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
         const currentDate = moment();
 
-        const proyectosActivos = proyectos.filter((proyecto) => {
+        const proyectosActivos = [];
+        const proyectosExpirados = [];
+
+        proyectos.forEach((proyecto) => {
           const fechaFin = moment(proyecto.proyecto_fecha_fin, 'M/D/YYYY');
-          return currentDate.isSameOrBefore(fechaFin, 'day');
+          const estaActivo = currentDate.isSameOrBefore(fechaFin, 'day');
+
+          const proyectoClasificado = {
+            nombre: proyecto.proyecto_nom,
+            fechaInicio: proyecto.proyecto_fecha_ini,
+            fechaFin: proyecto.proyecto_fecha_fin,
+          };
+
+          if (estaActivo) {
+            proyectosActivos.push(proyectoClasificado);
+          } else {
+            proyectosExpirados.push(proyectoClasificado);
+          }
         });
 
-        const proyectosExpirados = proyectos.filter((proyecto) => {
-          const fechaFin = moment(proyecto.proyecto_fecha_fin, 'M/D/YYYY');
-          return !currentDate.isSameOrBefore(fechaFin, 'day');
-        });
-
-        // Copia profunda de los datos para evitar estructuras circulares
-        const encuestadorResponse = JSON.parse(JSON.stringify(encuestador));
-        encuestadorResponse.proyectosActivos = proyectosActivos;
-        encuestadorResponse.proyectosExpirados = proyectosExpirados;
+        encuestador.proyectosActivos = proyectosActivos;
+        encuestador.proyectosExpirados = proyectosExpirados;
 
         // Devolver solo los datos del encuestador y sus proyectos asociados
-        res.json(encuestadorResponse);
+        res.json(encuestador);
       } else {
         res.status(404).json({ error: 'Encuestador no encontrado' });
       }
