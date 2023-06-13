@@ -1,5 +1,6 @@
 const express = require('express');
-const csv = require('csv-parser');
+const csv = require('csvtojson');
+const json2csv = require('json2csv').parse;
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
@@ -18,7 +19,27 @@ app.use((req, res, next) => {
   next();
 });
 
-// Ruta para buscar a un encuestador por su RUT
+const processLine = (line) => {
+  let imagenPath = line.imagen;
+  let imagenURL;z
+
+  if (!imagenPath || imagenPath === 'NA' || imagenPath === '') {
+    imagenPath = 'img/Saludando.png';
+  } else {
+    const hash = crypto.createHash('sha256');
+    const imageName = hash.update(imagenPath).digest('hex');
+    const imageExtension = path.extname(imagenPath);
+    const encryptedImagePath = `images/${imageName}${imageExtension}`;
+    fs.copyFileSync(imagenPath, encryptedImagePath);
+    line.imagen = encryptedImagePath;
+  }
+
+  imagenURL = 'http://54.165.24.96:3000/img/' + path.basename(line.imagen);
+  line.imagenURL = imagenURL;
+
+  return line;
+};
+
 app.get('/encuestadores/:rut', (req, res) => {
   const rut = req.params.rut.trim();
 
@@ -31,30 +52,6 @@ app.get('/encuestadores/:rut', (req, res) => {
       const encuestador = results.find((encuestador) => encuestador.rut.trim() === rut);
 
       if (encuestador) {
-        let imagenPath = encuestador.imagen;
-        let imagenURL;
-
-        if (!imagenPath || imagenPath === 'NA' || imagenPath === '') {
-          // Asignar la ruta de la imagen fija cuando no hay imagen disponible
-          imagenPath = 'img/Saludando.png';
-        } else {
-          // Generar un hash único para el nombre de la imagen
-          const hash = crypto.createHash('sha256');
-          const imageName = hash.update(imagenPath).digest('hex');
-          const imageExtension = path.extname(imagenPath);
-          const encryptedImagePath = `images/${imageName}${imageExtension}`;
-        
-          // Copiar la imagen original a la carpeta "images" con el nuevo nombre encriptado
-          fs.copyFileSync(imagenPath, encryptedImagePath);
-        
-          // Actualiza el path de la imagen en el objeto encuestador
-          encuestador.imagen = encryptedImagePath;
-        }
-
-        imagenURL = 'http://54.165.24.96:3000/img/' + path.basename(encuestador.imagen); // Obtén solo el nombre del archivo de la imagen
-        encuestador.imagenURL = imagenURL;
-
-        // Leer y procesar los proyectos del encuestador
         const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
         const currentDate = moment();
 
@@ -81,7 +78,6 @@ app.get('/encuestadores/:rut', (req, res) => {
         encuestador.proyectosActivos = proyectosActivos;
         encuestador.proyectosExpirados = proyectosExpirados;
 
-        // Devolver solo los datos del encuestador y sus proyectos asociados
         res.json(encuestador);
       } else {
         res.status(404).json({ error: 'Encuestador no encontrado' });
@@ -89,10 +85,16 @@ app.get('/encuestadores/:rut', (req, res) => {
     });
 });
 
-// Ruta para servir las imágenes de los encuestadores
 app.use('/img', express.static(path.join(__dirname, 'images')));
-
 
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en el puerto ${PORT}`);
+
+  csv()
+    .fromFile('encuestadores.csv')
+    .then((results) => {
+      const updatedResults = results.map(processLine);
+      const updatedCsv = json2csv(updatedResults);
+      fs.writeFileSync('encuestadores.csv', updatedCsv, 'utf8');
+    });
 });
