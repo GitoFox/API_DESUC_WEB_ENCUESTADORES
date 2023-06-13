@@ -13,6 +13,9 @@ RUN npm install
 # Copiar el resto de los archivos de la aplicación
 COPY . .
 
+# Ejecuta el script que encripta las imágenes y modifica el archivo CSV
+RUN node encryptImagesAndModifyCSV.js
+
 # Exponer el puerto 3000
 EXPOSE 3000
 
