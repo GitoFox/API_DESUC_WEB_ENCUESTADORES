@@ -51,7 +51,7 @@ app.get('/encuestadores/:rut', (req, res) => {
           encuestador.imagen = encryptedImagePath;
         }
 
-        imagenURL = 'http://54.165.24.96:3000//img/' + path.basename(encuestador.imagen); // Obtén solo el nombre del archivo de la imagen
+        imagenURL = 'http://54.165.24.96:3000/img/' + path.basename(encuestador.imagen); // Obtén solo el nombre del archivo de la imagen
         encuestador.imagenURL = imagenURL;
 
         // Leer y procesar los proyectos del encuestador
