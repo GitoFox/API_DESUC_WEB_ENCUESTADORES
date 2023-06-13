@@ -47,11 +47,11 @@ app.get('/encuestadores/:rut', (req, res) => {
     .pipe(csv())
     .on('data', (data) => results.push(data))
     .on('end', () => {
-      const encuestador = results.find((encuestador) => encuestador.RUT.trim() === rut);
+      const encuestador = results.find((encuestador) => encuestador.rut.trim() === rut);
 
       if (encuestador) {
         // Encriptar todas las imágenes correspondientes al encuestador
-        const proyectos = results.filter((proyecto) => proyecto.RUT.trim() === rut);
+        const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
         proyectos.forEach((proyecto) => {
           const imagenPath = proyecto.imagen;
           proyecto.imagen = encriptarImagen(imagenPath);
