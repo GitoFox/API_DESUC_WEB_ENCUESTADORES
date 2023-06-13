@@ -12,7 +12,7 @@ RUN npm install
 
 # Copiar el resto de los archivos de la aplicación
 COPY server.js .
-COPY img img
+COPY ./img ./img
 
 # Exponer el puerto 3000
 EXPOSE 3000
