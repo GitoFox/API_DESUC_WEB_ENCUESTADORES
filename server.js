@@ -74,11 +74,13 @@ app.get('/encuestadores/:rut', (req, res) => {
           return !currentDate.isSameOrBefore(fechaFin, 'day');
         });
 
-        encuestador.proyectosActivos = proyectosActivos;
-        encuestador.proyectosExpirados = proyectosExpirados;
+        // Copia profunda de los datos para evitar estructuras circulares
+        const encuestadorResponse = JSON.parse(JSON.stringify(encuestador));
+        encuestadorResponse.proyectosActivos = proyectosActivos;
+        encuestadorResponse.proyectosExpirados = proyectosExpirados;
 
         // Devolver solo los datos del encuestador y sus proyectos asociados
-        res.json(encuestador);
+        res.json(encuestadorResponse);
       } else {
         res.status(404).json({ error: 'Encuestador no encontrado' });
       }
