@@ -1,23 +1,20 @@
-# Elegir la imagen base
-FROM node:14
+# Usar una imagen de Node.js LTS (Long Term Support)
+FROM node:lts
 
-# Crear un directorio para la aplicación en el contenedor
+# Crear directorio de la aplicación en el contenedor
 WORKDIR /usr/src/app
 
-# Copiar el archivo package.json y package-lock.json
+# Copiar package.json y package-lock.json
 COPY package*.json ./
 
-# Instalar las dependencias de tu aplicación
+# Instalar dependencias
 RUN npm install
 
-# Copiar el resto de tus archivos de la aplicación
+# Copiar el resto de los archivos de la aplicación
 COPY . .
 
-# Ejecutar el script de encriptación y actualización
-RUN node encrypt.js
-
-# Exponer el puerto en el que tu aplicación se ejecutará
+# Exponer el puerto 3000
 EXPOSE 3000
 
-# Comando para iniciar tu aplicación
+# Comando para iniciar la aplicación
 CMD [ "node", "server.js" ]
