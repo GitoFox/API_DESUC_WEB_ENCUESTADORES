@@ -27,12 +27,19 @@ if (!fs.existsSync('img/encrypted')) {
     fs.mkdirSync('img/encrypted');
 }
 
+const path = require('path');
+
 async function encryptAllImages() {
-    const files = fs.readdirSync('img');
+    const dir = 'img';
+    const files = fs.readdirSync(dir);
     const encryptedFiles = {};
 
     for (let file of files) {
-        if (file !== '.DS_Store') {
+        // Full path of the file
+        const filePath = path.join(dir, file);
+
+        // Check if the file is not a directory
+        if (fs.statSync(filePath).isFile() && file !== '.DS_Store') {
             const hashedFileName = await encryptImage(file);
             encryptedFiles[file] = hashedFileName;
         }
