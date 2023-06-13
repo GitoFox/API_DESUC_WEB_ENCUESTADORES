@@ -99,7 +99,6 @@ app.get('/encuestadores/:rut', (req, res) => {
 app.use('/img', express.static(path.join(__dirname, 'images')));
 
 // Función para encriptar todas las imágenes y actualizar los paths en el archivo CSV
-// Función para encriptar todas las imágenes y actualizar los paths en el archivo CSV
 const encriptarTodasLasImagenes = () => {
   const results = [];
 
@@ -122,17 +121,16 @@ const encriptarTodasLasImagenes = () => {
 
       // Guardar los cambios en el archivo CSV
       const writer = fs.createWriteStream('encuestadores.csv');
-      writer.write('rut,Nombre,Apellidos,imagen\n');
+      writer.write('rut,Nombre,Apellidos,proyecto_nom,proyecto_fecha_ini,proyecto_fecha_fin,imagen\n');
       results.forEach((encuestador) => {
         const proyectos = results.filter((proyecto) => proyecto.rut.trim() === encuestador.rut.trim());
         proyectos.forEach((proyecto) => {
-          writer.write(`${encuestador.rut},${encuestador.Nombre},${encuestador.Apellidos},${proyecto.imagen}\n`);
+          writer.write(`${encuestador.rut},${encuestador.Nombre},${encuestador.Apellidos},${proyecto.proyecto_nom},${proyecto.proyecto_fecha_ini},${proyecto.proyecto_fecha_fin},${proyecto.imagen}\n`);
         });
       });
       writer.end();
     });
 };
-
 
 // Encriptar todas las imágenes al iniciar el servidor
 encriptarTodasLasImagenes();
