@@ -4,9 +4,6 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const moment = require('moment');
-const crypto = require('crypto');
-const fastcsv = require('fast-csv');
-const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 
 const app = express();
 const PORT = 3000;
@@ -25,7 +22,7 @@ app.get('/encuestadores/:rut', (req, res) => {
 
   const results = [];
 
-  fs.createReadStream('encuestadores.csv')
+  fs.createReadStream('encuestadores_new.csv') // Cambiar aquí el nombre del archivo a 'encuestadores_new.csv'
     .pipe(csv())
     .on('data', (data) => results.push(data))
     .on('end', () => {
@@ -80,47 +77,7 @@ app.get('/encuestadores/:rut', (req, res) => {
 
 app.use('/img', express.static(path.join(__dirname, 'img')));
 
-// Generar hash para las imágenes y actualizar CSV
-async function hashFile(file) {
-  const hash = crypto.createHash('sha256');
-  return new Promise((resolve, reject) => {
-    const stream = fs.createReadStream(file);
-    stream.on('error', err => reject(err));
-    stream.on('data', chunk => hash.update(chunk));
-    stream.on('end', () => resolve(hash.digest('hex')));
-  });
-}
-
-const csvData = [];
-const csvStream = fastcsv.parseFile('encuestadores.csv', {headers: true})
-  .on('data', row => {
-    csvData.push(row);
-  })
-  .on('end', async rowCount => {
-    console.log(`Parsed ${rowCount} rows`);
-
-    for(let row of csvData) {
-      // Actualizar el path de la imagen a formato UNIX si está en formato Windows
-      const formattedImagePath = row.imagen.split('\\').join('/');
-      
-      const oldPath = path.join(__dirname, formattedImagePath);
-      const hash = await hashFile(oldPath);
-      const ext = path.extname(oldPath);
-      const newPath = path.join(path.dirname(oldPath), `${hash}${ext}`);
-      fs.renameSync(oldPath, newPath);
-      row.imagen = newPath.replace(__dirname + '/', ''); // Actualizar la dirección en el CSV
-    }
-
-    // Escribir en un nuevo CSV
-    const csvWriter = createCsvWriter({
-      path: 'encuestadores_new.csv',
-      header: Object.keys(csvData[0]).map(key => ({id: key, title: key})),
-    });
-  
-    csvWriter.writeRecords(csvData).then(() => console.log('CSV file written'));
-
-    // Iniciar el servidor después de que se haya actualizado el CSV
-    app.listen(PORT, () => {
-      console.log(`Servidor escuchando en el puerto ${PORT}`);
-    });
-  });
+// Iniciar el servidor
+app.listen(PORT, () => {
+  console.log(`Servidor escuchando en el puerto ${PORT}`);
+});

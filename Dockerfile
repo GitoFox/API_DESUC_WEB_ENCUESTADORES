@@ -11,8 +11,10 @@ COPY package*.json ./
 RUN npm install
 
 # Copiar el resto de los archivos de la aplicación
-COPY server.js .
-COPY ./img ./img
+COPY . .
+
+# Generar hash y actualizar CSV
+RUN node encryptImagesAndModifyCSV.js
 
 # Exponer el puerto 3000
 EXPOSE 3000
