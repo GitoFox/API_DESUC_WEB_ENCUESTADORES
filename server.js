@@ -64,24 +64,14 @@ app.get('/encuestadores/:rut', (req, res) => {
         // Leer y procesar los proyectos del encuestador
         const currentDate = moment();
 
-        const proyectosActivos = [];
-        const proyectosExpirados = [];
-
-        proyectos.forEach((proyecto) => {
+        const proyectosActivos = proyectos.filter((proyecto) => {
           const fechaFin = moment(proyecto.proyecto_fecha_fin, 'M/D/YYYY');
-          const estaActivo = currentDate.isSameOrBefore(fechaFin, 'day');
+          return currentDate.isSameOrBefore(fechaFin, 'day');
+        });
 
-          const proyectoClasificado = {
-            nombre: proyecto.proyecto_nom,
-            fechaInicio: proyecto.proyecto_fecha_ini,
-            fechaFin: proyecto.proyecto_fecha_fin,
-          };
-
-          if (estaActivo) {
-            proyectosActivos.push(proyectoClasificado);
-          } else {
-            proyectosExpirados.push(proyectoClasificado);
-          }
+        const proyectosExpirados = proyectos.filter((proyecto) => {
+          const fechaFin = moment(proyecto.proyecto_fecha_fin, 'M/D/YYYY');
+          return !currentDate.isSameOrBefore(fechaFin, 'day');
         });
 
         encuestador.proyectosActivos = proyectosActivos;
