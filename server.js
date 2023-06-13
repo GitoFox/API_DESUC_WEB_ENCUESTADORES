@@ -4,6 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const moment = require('moment');
+const crypto = require('crypto');
+const csvWriter = require('csv-writer').createObjectCsvWriter;
 
 const app = express();
 const PORT = 3000;
@@ -16,6 +18,77 @@ app.use((req, res, next) => {
   next();
 });
 
+// Mapa para almacenar la correspondencia entre nombres de archivo originales y nombres encriptados
+const encryptedFilesMap = new Map();
+
+// Función para encriptar una imagen
+function encryptImage(fileName) {
+  return new Promise((resolve, reject) => {
+    const input = fs.createReadStream(`img/${fileName}`);
+    const hash = crypto.createHash('sha256');
+    input.pipe(hash);
+
+    hash.on('data', (hashBuffer) => {
+      const hashedFileName = hashBuffer.toString('hex');
+      input.close();
+
+      // Renombrar y mover la imagen encriptada
+      fs.rename(`img/${fileName}`, `img/encrypted/${hashedFileName}`, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          // Almacenar la correspondencia entre nombres originales y encriptados
+          encryptedFilesMap.set(fileName, hashedFileName);
+          resolve(hashedFileName);
+        }
+      });
+    });
+  });
+}
+
+// Función para encriptar todas las imágenes
+async function encryptAllImages() {
+  const files = fs.readdirSync('img');
+
+  for (let file of files) {
+    if (file !== '.DS_Store') {
+      await encryptImage(file);
+    }
+  }
+}
+
+// Middleware para encriptar las imágenes y actualizar el CSV al iniciar el servidor
+app.use(async (req, res, next) => {
+  // Encriptar imágenes y actualizar el CSV solo en el primer inicio del servidor
+  if (!fs.existsSync('img/encrypted')) {
+    fs.mkdirSync('img/encrypted');
+    await encryptAllImages();
+    updateCsvFile();
+  }
+  next();
+});
+
+// Función para actualizar el CSV
+async function updateCsvFile() {
+  const results = [];
+
+  fs.createReadStream('encuestadores.csv')
+    .pipe(csv())
+    .on('data', (data) => {
+      if (data.imagen in encryptedFilesMap) {
+        data.imagen = `img/encrypted/${encryptedFilesMap.get(data.imagen)}`;
+      }
+      results.push(data);
+    })
+    .on('end', () => {
+      const writer = csvWriter({
+        path: 'encuestadores.csv',
+        header: Object.keys(results[0]).map((key) => ({ id: key, title: key })),
+      });
+
+      writer.writeRecords(results);
+    });
+}
 // Ruta para buscar a un encuestador por su RUT
 app.get('/encuestadores/:rut', (req, res) => {
   const rut = req.params.rut.trim();
@@ -75,6 +148,7 @@ app.get('/encuestadores/:rut', (req, res) => {
     });
 });
 
+// Ruta para servir las imágenes de los encuestadores
 app.use('/img', express.static(path.join(__dirname, 'img')));
 
 // Iniciar el servidor
