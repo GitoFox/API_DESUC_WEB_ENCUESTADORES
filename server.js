@@ -98,9 +98,13 @@ app.get('/encuestadores/:rut', (req, res) => {
         if (!imagenPath || imagenPath === 'NA' || imagenPath === '') {
           // Asignar la ruta de la imagen fija cuando no hay imagen disponible
           imagenPath = 'img/Saludando.png';
+        } else if (imagenPath.startsWith('img/encrypted/')) {
+          // Obtener el nombre del archivo de la imagen encriptada
+          const hashedFileName = imagenPath.split('/').pop();
+          imagenPath = `img/encrypted/${hashedFileName}`;
         }
 
-        imagenURL = 'http://localhost:3000/img/' + path.basename(imagenPath); // Obtén solo el nombre del archivo de la imagen
+        imagenURL = 'http://54.165.24.96:3000/' + imagenPath;
         encuestador.imagenURL = imagenURL;
 
         // Leer y procesar los proyectos del encuestador
@@ -137,6 +141,7 @@ app.get('/encuestadores/:rut', (req, res) => {
       }
     });
 });
+
 
 // Ruta para servir las imágenes de los encuestadores
 app.use('/img', express.static(path.join(__dirname, 'img')));
