@@ -1,20 +1,20 @@
-# Seleccionar la imagen base
+# Establecer la imagen base
 FROM node:14
 
-# Crear el directorio de trabajo en el contenedor
-WORKDIR /app
+# Crear el directorio de la aplicación en el contenedor
+WORKDIR /usr/src/app
 
-# Copiar los archivos de la aplicación al contenedor
+# Copiar el archivo de las dependencias del proyecto
 COPY package*.json ./
-COPY server.js ./
-COPY encuestadores.csv ./
-COPY img/ ./img/
 
-# Instalar las dependencias
+# Instalar las dependencias del proyecto
 RUN npm install
 
-# Exponer el puerto
+# Copiar el resto del código de la aplicación al contenedor
+COPY . .
+
+# Exponer el puerto que la aplicación utilizará
 EXPOSE 3000
 
 # Comando para iniciar la aplicación
-CMD [ "node", "server.js" ]
+CMD [ "node", "tuArchivoPrincipal.js" ]

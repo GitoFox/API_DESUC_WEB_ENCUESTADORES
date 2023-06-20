@@ -4,20 +4,25 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const moment = require('moment');
-const crypto = require('crypto');
 
 const app = express();
 const PORT = 3000;
 
+
 // Middleware para parsear el cuerpo de las solicitudes como JSON
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  exposedHeaders: 'Referer'
+}));
 
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
   next();
 });
 
+
+// Ruta para buscar a un encuestador por su RUT
 app.get('/encuestadores/:rut', (req, res) => {
   const rut = req.params.rut.trim();
 
@@ -32,17 +37,14 @@ app.get('/encuestadores/:rut', (req, res) => {
       if (encuestador) {
         let imagenPath = encuestador.imagen;
         let imagenURL;
-        let sinImagen = false; // Variable para empleados sin imagen
 
         if (!imagenPath || imagenPath === 'NA' || imagenPath === '') {
           // Asignar la ruta de la imagen fija cuando no hay imagen disponible
           imagenPath = 'img/Saludando.png';
-          sinImagen = true; // Establecer la variable sinImagen en true
         }
 
-        imagenURL = 'http://3.209.219.82:3000/img/' + path.basename(imagenPath); // Obtén solo el nombre del archivo de la imagen
+        imagenURL = 'http://54.165.24.96:3000/img/' + path.basename(imagenPath); // Obtén solo el nombre del archivo de la imagen
         encuestador.imagenURL = imagenURL;
-        encuestador.sinImagen = sinImagen; // Agregar la variable sinImagen al encuestador
 
         // Leer y procesar los proyectos del encuestador
         const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
@@ -86,5 +88,3 @@ app.use('/img', express.static(path.join(__dirname, 'img')));
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en el puerto ${PORT}`);
 });
-
-
