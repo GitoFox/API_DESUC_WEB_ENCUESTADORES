@@ -30,8 +30,15 @@ app.get('/encuestadores/:rut', (req, res) => {
       const encuestador = results.find((encuestador) => encuestador.rut.trim() === rut);
 
       if (encuestador) {
-        const imagenPath = encuestador.imagen;
-        const imagenURL = 'http://3.209.219.82:3000/img/' + path.basename(imagenPath); // Obtén solo el nombre del archivo de la imagen
+        let imagenPath = encuestador.imagen;
+        let imagenURL;
+
+        if (!imagenPath || imagenPath === 'NA' || imagenPath === '') {
+          // Asignar la ruta de la imagen fija cuando no hay imagen disponible
+          imagenPath = 'img/Saludando.png';
+        }
+
+        imagenURL = 'https://3.209.219.82:3000/img/' + path.basename(imagenPath); // Obtén solo el nombre del archivo de la imagen
         encuestador.imagenURL = imagenURL;
 
         // Leer y procesar los proyectos del encuestador
