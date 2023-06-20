@@ -88,10 +88,3 @@ app.listen(PORT, () => {
 });
 
 
-// Ruta para servir las imágenes de los encuestadores
-app.use('/img', express.static(path.join(__dirname, 'img')));
-
-// Iniciar el servidor
-app.listen(PORT, () => {
-  console.log(`Servidor escuchando en el puerto ${PORT}`);
-});
