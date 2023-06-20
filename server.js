@@ -46,7 +46,7 @@ app.get('/encuestadores/:rut', (req, res) => {
   const encuestador = results.find((encuestador) => encuestador.rut && encuestador.rut.trim() === rut);
 
   if (encuestador) {
-    let imagenURL = 'http://54.165.24.96:3000/img/' + path.basename(encuestador.imagen);
+    let imagenURL = 'http://3.209.219.82:3000/img/' + path.basename(encuestador.imagen);
     encuestador.imagenURL = imagenURL;
 
     const proyectos = results.filter((proyecto) => proyecto.rut && proyecto.rut.trim() === rut);
