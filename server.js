@@ -18,69 +18,56 @@ app.use((req, res, next) => {
   next();
 });
 
-// Cargando y encriptando las imágenes al inicio
-let results = [];
-fs.createReadStream('encuestadores.csv')
-  .pipe(csv())
-  .on('data', (data) => {
-    let imagenPath = data.imagen;
-    if (imagenPath && imagenPath !== 'NA' && imagenPath.trim() !== '') {
-      const hash = crypto.createHash('sha256');
-      const imageName = hash.update(imagenPath).digest('hex');
-      const imageExtension = path.extname(imagenPath);
-      const encryptedImagePath = `images/${imageName}${imageExtension}`;
-
-      fs.copyFileSync(imagenPath, encryptedImagePath);
-      data.imagen = encryptedImagePath;
-    }
-
-    results.push(data);
-  })
-  .on('end', () => {
-    console.log('Imágenes cargadas y encriptadas.');
-  });
-
-// Ruta para buscar a un encuestador por su RUT
 app.get('/encuestadores/:rut', (req, res) => {
   const rut = req.params.rut.trim();
-  const encuestador = results.find((encuestador) => encuestador.rut && encuestador.rut.trim() === rut);
 
-  if (encuestador) {
-    let imagenURL = 'http://3.209.219.82:3000/img/' + path.basename(encuestador.imagen);
-    encuestador.imagenURL = imagenURL;
+  const results = [];
 
-    const proyectos = results.filter((proyecto) => proyecto.rut && proyecto.rut.trim() === rut);
-    const currentDate = moment();
+  fs.createReadStream('encuestadores.csv')
+    .pipe(csv())
+    .on('data', (data) => results.push(data))
+    .on('end', () => {
+      const encuestador = results.find((encuestador) => encuestador.rut.trim() === rut);
 
-    const proyectosActivos = [];
-    const proyectosExpirados = [];
+      if (encuestador) {
+        const imagenPath = encuestador.imagen;
+        const imagenURL = 'http://3.209.219.82:3000/img/' + path.basename(imagenPath); // Obtén solo el nombre del archivo de la imagen
+        encuestador.imagenURL = imagenURL;
 
-    proyectos.forEach((proyecto) => {
-      const fechaFin = moment(proyecto.proyecto_fecha_fin, 'M/D/YYYY');
-      const estaActivo = currentDate.isSameOrBefore(fechaFin, 'day');
+        // Leer y procesar los proyectos del encuestador
+        const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
+        const currentDate = moment();
 
-      const proyectoClasificado = {
-        nombre: proyecto.proyecto_nom,
-        fechaInicio: proyecto.proyecto_fecha_ini,
-        fechaFin: proyecto.proyecto_fecha_fin,
-      };
+        const proyectosActivos = [];
+        const proyectosExpirados = [];
 
-      if (estaActivo) {
-        proyectosActivos.push(proyectoClasificado);
+        proyectos.forEach((proyecto) => {
+          const fechaFin = moment(proyecto.proyecto_fecha_fin, 'M/D/YYYY');
+          const estaActivo = currentDate.isSameOrBefore(fechaFin, 'day');
+
+          const proyectoClasificado = {
+            nombre: proyecto.proyecto_nom,
+            fechaInicio: proyecto.proyecto_fecha_ini,
+            fechaFin: proyecto.proyecto_fecha_fin,
+          };
+
+          if (estaActivo) {
+            proyectosActivos.push(proyectoClasificado);
+          } else {
+            proyectosExpirados.push(proyectoClasificado);
+          }
+        });
+
+        encuestador.proyectosActivos = proyectosActivos;
+        encuestador.proyectosExpirados = proyectosExpirados;
+
+        // Devolver solo los datos del encuestador y sus proyectos asociados
+        res.json(encuestador);
       } else {
-        proyectosExpirados.push(proyectoClasificado);
+        res.status(404).json({ error: 'Encuestador no encontrado' });
       }
     });
-
-    encuestador.proyectosActivos = proyectosActivos;
-    encuestador.proyectosExpirados = proyectosExpirados;
-
-    res.json(encuestador);
-  } else {
-    res.status(404).json({ error: 'Encuestador no encontrado' });
-  }
 });
-
 // Ruta para servir las imágenes de los encuestadores
 app.use('/img', express.static(path.join(__dirname, 'images')));
 
