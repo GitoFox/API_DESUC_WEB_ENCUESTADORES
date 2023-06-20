@@ -32,14 +32,17 @@ app.get('/encuestadores/:rut', (req, res) => {
       if (encuestador) {
         let imagenPath = encuestador.imagen;
         let imagenURL;
+        let sinImagen = false; // Variable para empleados sin imagen
 
         if (!imagenPath || imagenPath === 'NA' || imagenPath === '') {
           // Asignar la ruta de la imagen fija cuando no hay imagen disponible
           imagenPath = 'img/Saludando.png';
+          sinImagen = true; // Establecer la variable sinImagen en true
         }
 
-        imagenURL = 'https://3.209.219.82:3000/img/' + path.basename(imagenPath); // Obtén solo el nombre del archivo de la imagen
+        imagenURL = 'http://3.209.219.82:3000/img/' + path.basename(imagenPath); // Obtén solo el nombre del archivo de la imagen
         encuestador.imagenURL = imagenURL;
+        encuestador.sinImagen = sinImagen; // Agregar la variable sinImagen al encuestador
 
         // Leer y procesar los proyectos del encuestador
         const proyectos = results.filter((proyecto) => proyecto.rut.trim() === rut);
@@ -75,6 +78,15 @@ app.get('/encuestadores/:rut', (req, res) => {
       }
     });
 });
+
+// Ruta para servir las imágenes de los encuestadores
+app.use('/img', express.static(path.join(__dirname, 'img')));
+
+// Iniciar el servidor
+app.listen(PORT, () => {
+  console.log(`Servidor escuchando en el puerto ${PORT}`);
+});
+
 
 // Ruta para servir las imágenes de los encuestadores
 app.use('/img', express.static(path.join(__dirname, 'img')));
